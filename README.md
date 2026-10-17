@@ -71,6 +71,64 @@ Google lists the Web Risk Lookup API's first 100,000 calls per month as free at 
 
 `payguard_prepare_threat_report` creates a redacted JSON draft. It does not submit the report or notify PayBox because no verified official reporting endpoint is configured in this project. Review and submit it only through a route confirmed by PayBox. Reports are allegations for investigation, not proof of malicious intent. The draft does not include free-form user notes because automated secret redaction cannot reliably identify every seed phrase or credential format.
 
+## Local API, k6 and Grafana testing
+
+This repository includes a read-only HTTP wrapper for local testing, k6 scenarios, Prometheus metrics, and a provisioned Grafana dashboard. These are development tools; they do not execute payments or prove transaction blocking.
+
+### Requirements
+
+- Node.js 20+ for the API and automated tests.
+- Docker Desktop with Docker Compose v2 for Grafana, Prometheus, and k6 containers.
+
+### Run automated tests
+
+```bash
+npm test
+npm run build
+node --check server.mjs
+node --check dist/plugin.mjs
+```
+
+### Start the API directly
+
+```bash
+npm start
+```
+
+The local API defaults to `http://127.0.0.1:8080` and provides `GET /health`, `GET /metrics`, and these JSON POST endpoints:
+
+- `/api/analyze-url`
+- `/api/check-payment`
+- `/api/threat-report`
+
+The supplied URL is parsed but never visited. Reputation lookup is disabled unless a request explicitly sets `checkReputation: true` and the server-side `GOOGLE_WEB_RISK_API_KEY` is configured.
+
+### Start Grafana and Prometheus
+
+Copy `.env.example` to `.env`, then set a long, unique value for `GRAFANA_ADMIN_PASSWORD`. Keep `.env` private.
+
+```bash
+docker compose up --build -d payguard-api prometheus grafana
+docker compose ps
+```
+
+Open Grafana at http://127.0.0.1:3000 (username `admin`, password from `.env`). Prometheus is at http://127.0.0.1:9090. Ports bind to loopback only.
+
+### Run k6
+
+With the services above running, execute:
+
+```bash
+docker compose --profile loadtest run --rm k6 run -o experimental-prometheus-rw /scripts/smoke.js
+docker compose --profile loadtest run --rm k6 run -o experimental-prometheus-rw /scripts/load.js
+```
+
+The load scenario ramps up to 25 virtual users for about 90 seconds. Initial thresholds are development targets (less than 1% failed requests, p95 below 500 ms, p99 below 1 second), not production capacity guarantees. k6 sends metrics to the enabled Prometheus remote-write receiver; Grafana's `PayGuard API & k6 Load Test` dashboard displays request rate, latency, HTTP errors, verdicts, and in-flight API requests.
+
+Stop the stack with `docker compose down`. Use `docker compose down -v` only if you intend to delete persisted metrics and Grafana data.
+
+Metrics use low-cardinality route/status/verdict labels and deliberately omit the submitted URL and domain. Do not expose this unauthenticated local API to the public internet without adding authentication, rate limits, appropriate logging and deployment hardening.
+
 ## PayBox integration status
 
 This repository contains the tested local MVP module. The exact PayBox marketplace loader/manifest contract and live x402 deployment have not yet been verified. Do not describe this repository as marketplace-approved or claim it blocks live payments until an adapter is implemented, integrated, and tested against the official PayBox runtime.
