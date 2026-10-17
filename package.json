@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Read-only x402 payment-intent policy checker for AI agents",
+  "description": "PayBox-oriented URL phishing checks, x402 payment-intent policy checks, and privacy-conscious threat-report drafts",
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "start": "node server.mjs"
   },
   "engines": {
     "node": ">=20"
