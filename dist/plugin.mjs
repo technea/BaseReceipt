@@ -373,7 +373,6 @@ const THREAT_REPORT_SCHEMA = {
     expectedDomain: { type: "string", maxLength: 253 },
     trustedDomains: { type: "array", maxItems: 30, items: { type: "string", maxLength: 253 } },
     checkReputation: { type: "boolean" },
-    userNotes: { type: "string", maxLength: 1200, description: "Optional evidence notes. Do not include credentials, seed phrases, private keys, or unrelated personal data." }
   }
 };
 
@@ -388,7 +387,12 @@ function parseUrlInput(raw) {
   const value = raw.trim();
   try {
     // For a bare domain, assume HTTPS. Explicit non-HTTP schemes are rejected below.
-    const candidate = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value) ? value : "https://" + value;
+    // Preserve explicit HTTP(S) URLs. Treat host:port as a hostname, not a custom scheme.
+    // Other explicit schemes (javascript:, data:, file:, ftp:, etc.) are rejected below.
+    const hasWebScheme = /^https?:\/\//i.test(value);
+    const looksLikeHostPort = /^[^/?#]+:\d+(?:[/?#]|$)/.test(value) && !value.includes("://");
+    const hasOtherScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:/i.test(value) && !looksLikeHostPort;
+    const candidate = hasWebScheme || hasOtherScheme ? value : "https://" + value;
     const parsed = new URL(candidate);
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return { parsed: null, scheme: parsed.protocol };
     if (!parsed.hostname) return null;
@@ -462,6 +466,15 @@ function redactUrl(raw) {
   parsed.username = "";
   parsed.password = "";
   parsed.hash = "";
+  // Hide likely capability/reset/session tokens embedded in path segments too.
+  parsed.pathname = parsed.pathname.split("/").map(segment => {
+    let decoded = segment;
+    try { decoded = decodeURIComponent(segment); } catch { /* Length rule still protects opaque segments. */ }
+    if (segment.length > 64 || /(?:token|secret|session|reset|recovery|private.?key|signature|auth.?code|invite.?code)/i.test(decoded)) {
+      return "[REDACTED]";
+    }
+    return segment;
+  }).join("/");
   for (const key of [...parsed.searchParams.keys()]) {
     parsed.searchParams.set(key, SENSITIVE_QUERY_KEYS.test(key) ? "[REDACTED]" : "[VALUE REDACTED]");
   }
@@ -692,8 +705,7 @@ export async function analyzeUrlSecurity(input, options = {}) {
 
 export async function prepareThreatReport(input, options = {}) {
   const analysis = await analyzeUrlSecurity(input, options);
-  const rawNotes = typeof input?.userNotes === "string" ? input.userNotes : "";
-  const notes = rawNotes.slice(0, 1200).replace(/(?:seed phrase|recovery phrase|private key|password)\s*[:=]\s*\S+/ig, "[REDACTED SENSITIVE VALUE]");
+  // Never copy free-form notes into a shareable report: automatic redaction cannot reliably detect every seed phrase or credential format.
   return {
     schemaVersion: "payguard-threat-report-v1",
     reportStatus: "DRAFT_NOT_SUBMITTED",
@@ -704,7 +716,6 @@ export async function prepareThreatReport(input, options = {}) {
     summary: analysis.summary,
     findings: analysis.checks,
     reputation: analysis.reputation,
-    userNotes: notes || undefined,
     submission: {
       status: "NOT_SUBMITTED",
       reason: "No verified PayBox threat-reporting endpoint is configured in this plugin. Review and export this report; submit only through an official, verified route.",
