@@ -160,3 +160,15 @@ test('plugin exposes the URL Sentinel and report tools', async () => {
   const report = await plugin.invokeTool('payguard_prepare_threat_report', { url: 'https://bad.example' });
   assert.equal(report.submission.automaticNotificationSent, false);
 });
+
+
+test('URL Sentinel accepts hostnames with an explicit port without treating the domain as a scheme', async () => {
+  const result = await analyzeUrlSecurity({ url: 'example.org:8443/path' });
+  assert.equal(result.hostname, 'example.org');
+  assert.ok(result.checks.some(c => c.id === 'nonstandard_port'));
+});
+test('Threat report never copies free-form notes that might contain wallet secrets', async () => {
+  const report = await prepareThreatReport({ url: 'https://bad.example', userNotes: 'seed phrase: alpha beta gamma delta epsilon zeta' });
+  assert.equal(Object.hasOwn(report, 'userNotes'), false);
+  assert.equal(report.submission.automaticNotificationSent, false);
+});
