@@ -756,7 +756,7 @@ export const plugin = Object.freeze({
   version: "0.1.0",
   category: "merchant-tools",
   protocol: "mcp",
-  description: "Read-only x402 payment-intent checks against explicit user policy.",
+  description: "URL phishing and impersonation analysis, privacy-conscious threat-report drafts, and read-only x402 payment-intent policy checks. Never opens URLs or executes payments.",
   tools: Object.freeze([payGuardTool, payGuardUrlSentinelTool, payGuardThreatReportTool]),
   invokeTool(name, input) {
     if (name === TOOL_NAME) return evaluatePaymentIntent(input);
