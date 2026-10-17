@@ -31,6 +31,25 @@ npm run build
 
 See the tests for complete request and policy examples. Amounts are integer strings in the asset's smallest units; do not use floating-point values for payment amounts.
 
+## Flow
+
+```mermaid
+flowchart TD
+    A["User / AI agent supplies URL"] --> B["URL Sentinel parses locally"]
+    B --> C["Check hostname, URL syntax, lookalikes and wallet-secret signals"]
+    C --> D{"Explicit reputation lookup requested?"}
+    D -->|No| E["Return heuristic assessment"]
+    D -->|Yes| F["Optional Google Web Risk lookup"]
+    F --> G["Known threat / no match / unavailable"]
+    G --> H["Explain findings and limitations"]
+    E --> H
+    H --> I["Prepare redacted report draft"]
+    I --> J["User reviews report"]
+    J --> K["Submit only via a verified reporting channel"]
+```
+
+URL Sentinel does not open or fetch the submitted URL, read the user's computer, request wallet secrets, or automatically notify PayBox. Reputation lookup is opt-in and sends the normalized origin/path without query parameters to Google Web Risk. The URL path may still contain identifiers, so only enable reputation lookup when it is appropriate to share that URL with the provider.
+
 ## URL Sentinel
 
 PayGuard includes a URL Sentinel tool for checking a user-supplied URL for common phishing and impersonation indicators. It parses the supplied address but never opens the submitted URL. Checks include embedded credentials, non-HTTPS URLs, IP-literal hosts, punycode/IDN labels, URL shorteners, likely lookalikes compared with a separately supplied trusted domain, suspicious PayBox-branded hostnames, wallet-recovery terminology, and a resource/expected-domain mismatch.
