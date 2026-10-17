@@ -7,7 +7,8 @@
   "scripts": {
     "test": "node --test test/*.test.mjs",
     "build": "node scripts/build.mjs",
-    "demo": "node examples/url-sentinel-demo.mjs"
+    "demo": "node examples/url-sentinel-demo.mjs",
+    "start": "node server.mjs"
   },
   "engines": {
     "node": ">=20"
