@@ -25,4 +25,5 @@ jobs:
       - name: Check distributable syntax
         run: node --check dist/plugin.mjs
       - name: Verify plugin exports
-        run: node --input-type=module -e "import('./dist/plugin.mjs').then(({default: p}) => { if (!p || p.tools.length !== 3) process.exit(1); console.log(p.tools.map(t => t.name).join(', ')); })"
+        run: >-
+          node --input-type=module -e "import('./dist/plugin.mjs').then(({default: p}) => { if (!p || p.tools.length !== 3) process.exit(1); console.log(p.tools.map(t => t.name).join(', ')); })"
