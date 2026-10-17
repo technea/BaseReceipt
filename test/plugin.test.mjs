@@ -151,7 +151,7 @@ test('Threat report redacts sensitive query values and is explicitly not submitt
   assert.equal(report.reportStatus, 'DRAFT_NOT_SUBMITTED');
   assert.equal(report.submission.automaticNotificationSent, false);
   assert.ok(!report.subject.url.includes('TOPSECRET'));
-  assert.ok(report.subject.url.includes('[REDACTED]') || report.subject.url.includes('[VALUE%20REDACTED]'));
+  assert.ok(report.subject.url.includes('%5BREDACTED%5D') || report.subject.url.includes('%5BVALUE%20REDACTED%5D'));
 });
 test('plugin exposes the URL Sentinel and report tools', async () => {
   assert.equal(plugin.tools.length, 3);
