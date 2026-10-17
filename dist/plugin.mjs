@@ -723,7 +723,8 @@ export async function prepareThreatReport(input, options = {}) {
     },
     safetyNotes: [
       "URL query parameter values and embedded credentials are redacted in the report URL.",
-      "Do not include seed phrases, private keys, login codes, or unrelated personal data in notes.",
+      "Free-form notes are excluded from this report to reduce accidental secret disclosure.",
+      "Before filing a separate external report, remove seed phrases, private keys, login codes, and unrelated personal data.",
       "A report is an allegation for investigation, not proof that a person or domain is malicious."
     ]
   };
