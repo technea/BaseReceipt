@@ -1,0 +1,14 @@
+{
+  "name": "payguard-paybox-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Read-only x402 payment-intent policy checker for AI agents",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "build": "node scripts/build.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
