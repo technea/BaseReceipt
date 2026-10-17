@@ -601,7 +601,7 @@ export async function analyzeUrlSecurity(input, options = {}) {
     }
   }
 
-  const officialPayboxHost = PAYBOX_OFFICIAL_DOMAINS.some(domain => hostnameMatches(host, domain));
+  const officialPayboxHost = PAYBOX_OFFICIAL_DOMAINS.includes(host);
   const flattenedHost = host.replace(/[.-]/g, "");
   if (flattenedHost.includes("paybox") && !officialPayboxHost) {
     addUrlCheck("possible_paybox_impersonation", "high", "The hostname contains the PayBox brand but is not on the known official PayBox domain list. Verify the domain using an independent official source.");
