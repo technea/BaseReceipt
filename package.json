@@ -6,7 +6,8 @@
   "description": "PayBox-oriented URL phishing checks, x402 payment-intent policy checks, and privacy-conscious threat-report drafts",
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "demo": "node examples/url-sentinel-demo.mjs"
   },
   "engines": {
     "node": ">=20"
