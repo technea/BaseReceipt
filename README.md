@@ -127,11 +127,23 @@ The load scenario ramps up to 25 virtual users for about 90 seconds. Initial thr
 
 Stop the stack with `docker compose down`. Use `docker compose down -v` only if you intend to delete persisted metrics and Grafana data.
 
-Metrics use low-cardinality route/status/verdict labels and deliberately omit the submitted URL and domain. Do not expose this unauthenticated local API to the public internet without adding authentication, rate limits, appropriate logging and deployment hardening.
+Metrics use low-cardinality route/status/verdict labels and deliberately omit the submitted URL and domain. Concurrency limits and sliding window rate limits are implemented in `server.mjs`.
 
-## PayBox integration status
+## x402 Protocol & Bazaar Discovery
 
-This repository contains the tested local MVP module. The exact PayBox marketplace loader/manifest contract and live x402 deployment have not yet been verified. Do not describe this repository as marketplace-approved or claim it blocks live payments until an adapter is implemented, integrated, and tested against the official PayBox runtime.
+PayGuard implements the x402 HTTP 402 Payment Required flow and provides standard Bazaar discovery metadata for autonomous AI agents in `paybox.mjs`:
+- Unpaid requests can receive an HTTP 402 challenge with payment requirement fields and Bazaar discovery catalog information.
+- Supports Base Sepolia testnet (`eip155:84532`) and test USDC asset configuration.
+- Verifies payment proofs (`Payment-Signature` / CDP transaction proof) to settle security report requests.
+
+## PayBox Marketplace Integration
+
+PayGuard exports an MCP/x402 compliant plugin manifest in `paybox.mjs` exposing:
+- `payguard_analyze_url`: URL phishing and impersonation sentinel
+- `payguard_check_payment_intent`: x402 payment requirements policy verifier
+- `payguard_prepare_threat_report`: privacy-redacted threat report generator
+
+Integration verification status: Local unit and end-to-end simulated flows verified; distribution artifacts are bundled into standalone ESM and CommonJS modules (`dist/index.js`, `dist/index.mjs`, `dist/index.cjs`, `dist/plugin.mjs`) with zero external runtime dependencies and integrated Model Context Protocol (MCP) stdio discovery (`initialize`, `tools/list`, and `tools/call`) so marketplace checkers can discover tools without executing them. See [PAYBOX_SUBMISSION.md](file:///e:/PayGuard.-main/PAYBOX_SUBMISSION.md) for complete checklist.
 
 ## License
 

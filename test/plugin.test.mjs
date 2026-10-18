@@ -172,3 +172,226 @@ test('Threat report never copies free-form notes that might contain wallet secre
   assert.equal(Object.hasOwn(report, 'userNotes'), false);
   assert.equal(report.submission.automaticNotificationSent, false);
 });
+
+// Adversarial tests for URL Sentinel and Payment Guard
+test('Adversarial: trusted-domain suffix attack is rejected (not matched as trusted)', async () => {
+  // attacker owns evilpaybox.sh or paybox.sh.attacker.com, not paybox.sh
+  const suffixAttack1 = await analyzeUrlSecurity({
+    url: 'https://evilpaybox.sh/login',
+    expectedDomain: 'paybox.sh'
+  });
+  assert.equal(suffixAttack1.verdict, 'SUSPICIOUS');
+  assert.ok(suffixAttack1.checks.some(c => c.id === 'trusted_domain_mismatch'));
+  assert.ok(!suffixAttack1.checks.some(c => c.id === 'trusted_domain_match'));
+
+  const suffixAttack2 = await analyzeUrlSecurity({
+    url: 'https://paybox.sh.attacker.example/login',
+    expectedDomain: 'paybox.sh'
+  });
+  assert.equal(suffixAttack2.verdict, 'SUSPICIOUS');
+  assert.ok(suffixAttack2.checks.some(c => c.id === 'trusted_domain_mismatch'));
+  assert.ok(!suffixAttack2.checks.some(c => c.id === 'trusted_domain_match'));
+});
+
+test('Adversarial: Unicode homoglyph and IDN punycode are flagged', async () => {
+  // Punycode domain representing Cyrillic 'a' (xn--pypal-4ve.com)
+  const punycodeResult = await analyzeUrlSecurity({
+    url: 'https://xn--pypal-4ve.com/signin',
+    expectedDomain: 'paypal.com'
+  });
+  assert.ok(punycodeResult.checks.some(c => c.id === 'idn_punycode'));
+  assert.equal(punycodeResult.verdict, 'SUSPICIOUS');
+
+  // Direct unicode hostname
+  const unicodeResult = await analyzeUrlSecurity({
+    url: 'https://рaybox.sh/login' // Cyrillic 'р'
+  });
+  assert.ok(unicodeResult.checks.some(c => c.id === 'unicode_hostname' || c.id === 'idn_punycode'));
+  assert.ok(['CAUTION', 'SUSPICIOUS'].includes(unicodeResult.verdict));
+});
+
+test('Adversarial: sensitive path segments (reset tokens, invite codes) are redacted in reputation query and display', async () => {
+  let calledUrl = '';
+  const result = await analyzeUrlSecurity(
+    {
+      url: 'https://service.example/reset-password/secret-token-abc123xyz987longtokenvalue/invite-code-999',
+      checkReputation: true
+    },
+    {
+      webRiskApiKey: 'test-api-key',
+      fetchImpl: async (url) => {
+        calledUrl = url;
+        return { ok: true, json: async () => ({}) };
+      }
+    }
+  );
+  // In the Web Risk query URL, the sensitive token path segments must be redacted
+  assert.ok(!calledUrl.includes('secret-token-abc123xyz987longtokenvalue'), 'Token was exposed in Web Risk lookup!');
+  assert.ok(!calledUrl.includes('invite-code-999'), 'Invite code was exposed in Web Risk lookup!');
+  assert.ok(calledUrl.includes('%5BREDACTED%5D') || calledUrl.includes('[REDACTED]'));
+  assert.equal(result.privacy.pathSegmentsRedactedForReputationProvider, true);
+  // Also redacted in displayedUrl
+  assert.ok(!result.displayedUrl.includes('secret-token-abc123xyz987longtokenvalue'));
+});
+
+test('Adversarial: reputation service network error fails safe without claiming safe', async () => {
+  const result = await analyzeUrlSecurity(
+    { url: 'https://unknown-service.example', checkReputation: true },
+    {
+      webRiskApiKey: 'test-api-key',
+      fetchImpl: async () => {
+        throw new Error('Connection refused / DNS lookup failed');
+      }
+    }
+  );
+  assert.equal(result.reputation.status, 'UNAVAILABLE');
+  assert.notEqual(result.verdict, 'NO_KNOWN_THREAT');
+  assert.ok(result.checks.some(c => c.id === 'threat_intelligence_unavailable'));
+});
+
+test('Adversarial: payment amount exceeding policy or negative/floating-point values fail closed', async () => {
+  // Negative amount
+  const negInput = goodInput();
+  negInput.paymentRequirements.accepts[0].amount = '-500';
+  assert.equal(evaluatePaymentIntent(negInput).status, 'BLOCK');
+
+  // Floating point amount
+  const floatInput = goodInput();
+  floatInput.paymentRequirements.accepts[0].amount = '100.50';
+  assert.equal(evaluatePaymentIntent(floatInput).status, 'BLOCK');
+
+  // Exceeds max amount atomic
+  const overInput = goodInput();
+  overInput.paymentRequirements.accepts[0].amount = '200000000000000000000000000000';
+  assert.equal(evaluatePaymentIntent(overInput).status, 'BLOCK');
+
+  // Exponential notation amount (e.g., '1e6')
+  const expInput = goodInput();
+  expInput.paymentRequirements.accepts[0].amount = '1e6';
+  assert.equal(evaluatePaymentIntent(expInput).status, 'BLOCK');
+});
+
+test('Adversarial: unapproved network or recipient substitution returns BLOCK', async () => {
+  // Network mismatch (e.g. eip155:1 mainnet when only Base eip155:8453 is allowed)
+  const netInput = goodInput();
+  netInput.paymentRequirements.accepts[0].network = 'eip155:1';
+  assert.equal(evaluatePaymentIntent(netInput).status, 'BLOCK');
+
+  // Recipient substitution
+  const recipInput = goodInput();
+  recipInput.paymentRequirements.accepts[0].payTo = '0x1111111111111111111111111111111111111111';
+  assert.equal(evaluatePaymentIntent(recipInput).status, 'BLOCK');
+});
+
+test('Adversarial: resource path substitution / cross-site resource returns BLOCK', async () => {
+  const diffResource = goodInput();
+  diffResource.paymentRequirements.resource = 'https://api.example.com/other-endpoint';
+  assert.equal(evaluatePaymentIntent(diffResource).status, 'BLOCK');
+  assert.ok(evaluatePaymentIntent(diffResource).checks.some(c => c.id === 'resource' && c.status === 'fail'));
+
+  const diffProtocol = goodInput();
+  diffProtocol.paymentRequirements.resource = 'http://api.example.com/report';
+  assert.equal(evaluatePaymentIntent(diffProtocol).status, 'BLOCK');
+});
+
+test('Adversarial: mixed payment options with one malicious option returns REVIEW and never PASS', async () => {
+  const mixedInput = goodInput();
+  mixedInput.paymentRequirements.accepts = [
+    structuredClone(safeCandidate), // safe option
+    {
+      scheme: 'exact',
+      network: 'eip155:8453',
+      asset: '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      payTo: '0x9999999999999999999999999999999999999999', // unauthorized recipient!
+      amount: '100',
+      maxTimeoutSeconds: 60
+    }
+  ];
+  const res = evaluatePaymentIntent(mixedInput);
+  assert.equal(res.status, 'REVIEW');
+  assert.notEqual(res.status, 'PASS');
+  assert.equal(res.paymentExecuted, false);
+});
+
+test('Bundled distribution artifacts export valid PayBox plugin contract and tools', async () => {
+  const pluginEsm = await import('../dist/plugin.mjs');
+  const indexEsm = await import('../dist/index.js');
+
+  for (const mod of [pluginEsm, indexEsm]) {
+    assert.equal(mod.default.id, 'payguard');
+    assert.equal(mod.default.name, 'PayGuard');
+    assert.equal(mod.default.protocol, 'mcp');
+    assert.equal(mod.default.tools.length, 3);
+    for (const tool of mod.default.tools) {
+      assert.ok(tool.name);
+      assert.ok(tool.description);
+      assert.ok(tool.inputSchema);
+      assert.equal(typeof tool.handler, 'function');
+    }
+  }
+});
+
+test('MCP stdio tool discovery discovers tools without running them', async () => {
+  const { spawn } = await import('node:child_process');
+  const { fileURLToPath } = await import('node:url');
+
+  const targetPath = fileURLToPath(new URL('../dist/index.js', import.meta.url));
+
+  const responses = await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [targetPath], {
+      stdio: ['pipe', 'pipe', 'inherit']
+    });
+
+    let buffer = '';
+    const received = [];
+
+    child.stdout.on('data', chunk => {
+      buffer += chunk.toString();
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (line.trim()) {
+          received.push(JSON.parse(line.trim()));
+          if (received.length === 2) {
+            child.kill();
+            resolve(received);
+          }
+        }
+      }
+    });
+
+    child.on('error', reject);
+    child.on('exit', code => {
+      if (received.length < 2) {
+        reject(new Error('Process exited with code ' + code + ' before responding to discovery'));
+      }
+    });
+
+    // Send initialize
+    child.stdin.write(JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: { protocolVersion: '2024-11-05' }
+    }) + '\n');
+
+    // Send tools/list
+    child.stdin.write(JSON.stringify({
+      jsonrpc: '2.0',
+      id: 2,
+      method: 'tools/list',
+      params: {}
+    }) + '\n');
+  });
+
+  const initMsg = responses.find(r => r.id === 1);
+  const toolsMsg = responses.find(r => r.id === 2);
+
+  assert.equal(initMsg?.result?.serverInfo?.name, 'PayGuard');
+  assert.equal(toolsMsg?.result?.tools?.length, 3);
+  const names = toolsMsg.result.tools.map(t => t.name);
+  assert.ok(names.includes('payguard_check_payment_intent'));
+  assert.ok(names.includes('payguard_analyze_url'));
+  assert.ok(names.includes('payguard_prepare_threat_report'));
+});
+

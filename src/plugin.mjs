@@ -416,7 +416,10 @@ function normalizeTrustedDomain(raw) {
 }
 
 function hostnameMatches(host, trusted) {
-  return host === trusted || host.endsWith("." + trusted);
+  if (typeof host !== "string" || typeof trusted !== "string") return false;
+  const h = host.toLowerCase().replace(/\.$/, "");
+  const t = trusted.toLowerCase().replace(/\.$/, "");
+  return h === t || h.endsWith("." + t);
 }
 
 function registrableGuess(host) {
@@ -470,7 +473,7 @@ function redactUrl(raw) {
   parsed.pathname = parsed.pathname.split("/").map(segment => {
     let decoded = segment;
     try { decoded = decodeURIComponent(segment); } catch { /* Length rule still protects opaque segments. */ }
-    if (segment.length > 64 || /(?:token|secret|session|reset|recovery|private.?key|signature|auth.?code|invite.?code)/i.test(decoded)) {
+    if (segment.length > 32 || /(?:token|secret|session|reset|recovery|private.?key|signature|auth.?code|invite.?code)/i.test(decoded)) {
       return "[REDACTED]";
     }
     return segment;
@@ -488,6 +491,17 @@ function reputationLookupUrl(parsed) {
   lookup.hash = "";
   // Query strings can contain session tokens, signed URLs, private identifiers, or other secrets.
   lookup.search = "";
+  // Privacy preservation: Redact sensitive or high-entropy path segments (reset tokens, invite codes, API keys)
+  // before transmitting to external reputation provider, or truncate to origin if path contains secret indicators.
+  const segments = lookup.pathname.split("/").map(segment => {
+    let decoded = segment;
+    try { decoded = decodeURIComponent(segment); } catch {}
+    if (segment.length > 32 || /(?:token|secret|session|reset|recovery|private.?key|signature|auth.?code|invite.?code)/i.test(decoded)) {
+      return "[REDACTED]";
+    }
+    return segment;
+  });
+  lookup.pathname = segments.join("/");
   return lookup.toString();
 }
 
@@ -502,8 +516,9 @@ function readWebRiskKey() {
 }
 
 async function queryWebRisk(parsed, apiKey, fetchImpl) {
-  if (!apiKey) return { status: "NOT_CONFIGURED", threatTypes: [], lookupScope: "origin_and_path_without_query" };
-  if (typeof fetchImpl !== "function") return { status: "UNAVAILABLE", threatTypes: [], lookupScope: "origin_and_path_without_query" };
+  const lookupScope = "origin_and_redacted_path_without_query";
+  if (!apiKey) return { status: "NOT_CONFIGURED", threatTypes: [], lookupScope };
+  if (typeof fetchImpl !== "function") return { status: "UNAVAILABLE", threatTypes: [], lookupScope };
   try {
     const endpoint = new URL("https://webrisk.googleapis.com/v1/uris:search");
     endpoint.searchParams.set("uri", reputationLookupUrl(parsed));
@@ -516,7 +531,7 @@ async function queryWebRisk(parsed, apiKey, fetchImpl) {
     }
     const response = await fetchImpl(endpoint.toString(), requestOptions);
     if (!response || !response.ok) {
-      return { status: "UNAVAILABLE", threatTypes: [], lookupScope: "origin_and_path_without_query" };
+      return { status: "UNAVAILABLE", threatTypes: [], lookupScope };
     }
     const data = await response.json();
     const threatTypes = data && data.threat && Array.isArray(data.threat.threatTypes)
@@ -526,11 +541,11 @@ async function queryWebRisk(parsed, apiKey, fetchImpl) {
       status: threatTypes.length ? "MATCH" : "NO_MATCH",
       threatTypes,
       expireTime: data && data.threat && typeof data.threat.expireTime === "string" ? data.threat.expireTime : undefined,
-      lookupScope: "origin_and_path_without_query"
+      lookupScope
     };
   } catch {
     // Do not surface request details or API credentials in tool output.
-    return { status: "UNAVAILABLE", threatTypes: [], lookupScope: "origin_and_path_without_query" };
+    return { status: "UNAVAILABLE", threatTypes: [], lookupScope };
   }
 }
 
@@ -691,7 +706,12 @@ export async function analyzeUrlSecurity(input, options = {}) {
   return {
     verdict, riskLevel, hostname: host, displayedUrl: shownUrl, summary, checks, reputation,
     recommendation,
-    privacy: { urlOpened: false, externalLookupPerformed: reputation.status === "MATCH" || reputation.status === "NO_MATCH" || reputation.status === "UNAVAILABLE", queryParametersSentToReputationProvider: false },
+    privacy: {
+      urlOpened: false,
+      externalLookupPerformed: reputation.status === "MATCH" || reputation.status === "NO_MATCH" || reputation.status === "UNAVAILABLE",
+      queryParametersSentToReputationProvider: false,
+      pathSegmentsRedactedForReputationProvider: true
+    },
     paymentExecuted: false,
     limitations: [
       "This analyzer never opens, visits, or downloads content from the submitted URL.",
@@ -731,25 +751,48 @@ export async function prepareThreatReport(input, options = {}) {
 }
 
 export const payGuardUrlSentinelTool = Object.freeze({
+  id: URL_SENTINEL_NAME,
   name: URL_SENTINEL_NAME,
+  title: URL_SENTINEL_NAME,
   description: "Assess a user-supplied URL for common phishing/impersonation signals and optionally query Google Web Risk. Never opens the URL, asks for wallet secrets, or makes payments. A no-match is not proof of legitimacy.",
   inputSchema: URL_SENTINEL_SCHEMA,
-  handler: analyzeUrlSecurity
+  input_schema: URL_SENTINEL_SCHEMA,
+  outputSchema: { type: "object" },
+  output_schema: { type: "object" },
+  handler: analyzeUrlSecurity,
+  execute: analyzeUrlSecurity,
+  run: analyzeUrlSecurity
 });
 
 export const payGuardThreatReportTool = Object.freeze({
+  id: THREAT_REPORT_NAME,
   name: THREAT_REPORT_NAME,
+  title: THREAT_REPORT_NAME,
   description: "Prepare a privacy-conscious draft security report for a suspicious URL. It does not transmit the report or notify PayBox automatically because no verified reporting endpoint is configured.",
   inputSchema: THREAT_REPORT_SCHEMA,
-  handler: prepareThreatReport
+  input_schema: THREAT_REPORT_SCHEMA,
+  outputSchema: { type: "object" },
+  output_schema: { type: "object" },
+  handler: prepareThreatReport,
+  execute: prepareThreatReport,
+  run: prepareThreatReport
 });
 
 export const payGuardTool = Object.freeze({
+  id: TOOL_NAME,
   name: TOOL_NAME,
+  title: TOOL_NAME,
   description: DESCRIPTION,
   inputSchema: INPUT_SCHEMA,
-  handler: evaluatePaymentIntent
+  input_schema: INPUT_SCHEMA,
+  outputSchema: { type: "object" },
+  output_schema: { type: "object" },
+  handler: evaluatePaymentIntent,
+  execute: evaluatePaymentIntent,
+  run: evaluatePaymentIntent
 });
+
+export const tools = Object.freeze([payGuardTool, payGuardUrlSentinelTool, payGuardThreatReportTool]);
 
 export const plugin = Object.freeze({
   id: "payguard",
@@ -758,13 +801,178 @@ export const plugin = Object.freeze({
   category: "merchant-tools",
   protocol: "mcp",
   description: "URL phishing and impersonation analysis, privacy-conscious threat-report drafts, and read-only x402 payment-intent policy checks. Never opens URLs or executes payments.",
-  tools: Object.freeze([payGuardTool, payGuardUrlSentinelTool, payGuardThreatReportTool]),
+  tools,
   invokeTool(name, input) {
     if (name === TOOL_NAME) return evaluatePaymentIntent(input);
     if (name === URL_SENTINEL_NAME) return analyzeUrlSecurity(input);
     if (name === THREAT_REPORT_NAME) return prepareThreatReport(input);
     throw new Error(`Unknown tool: ${String(name)}`);
+  },
+  execute(name, input) {
+    return this.invokeTool(name, input);
+  },
+  run(name, input) {
+    return this.invokeTool(name, input);
   }
 });
+
+export function startMcpServer(targetPlugin = plugin) {
+  let buffer = "";
+
+  function send(msg) {
+    process.stdout.write(JSON.stringify(msg) + "\n");
+  }
+
+  function handleMessage(message) {
+    if (!message || typeof message !== "object") return;
+    const { id, method, params } = message;
+
+    if (id === undefined || id === null) {
+      return;
+    }
+
+    if (method === "initialize") {
+      send({
+        jsonrpc: "2.0",
+        id,
+        result: {
+          protocolVersion: "2024-11-05",
+          capabilities: {
+            tools: {
+              listChanged: false
+            }
+          },
+          serverInfo: {
+            name: targetPlugin.name || "PayGuard",
+            version: targetPlugin.version || "0.1.0"
+          }
+        }
+      });
+      return;
+    }
+
+    if (method === "tools/list") {
+      const toolSummaries = targetPlugin.tools.map((t) => ({
+        name: t.name,
+        description: t.description,
+        inputSchema: t.inputSchema
+      }));
+      send({
+        jsonrpc: "2.0",
+        id,
+        result: {
+          tools: toolSummaries
+        }
+      });
+      return;
+    }
+
+    if (method === "tools/call") {
+      const toolName = params?.name;
+      const toolArgs = params?.arguments || {};
+      Promise.resolve()
+        .then(() => targetPlugin.invokeTool(toolName, toolArgs))
+        .then((toolRes) => {
+          send({
+            jsonrpc: "2.0",
+            id,
+            result: {
+              content: [
+                {
+                  type: "text",
+                  text: typeof toolRes === "string" ? toolRes : JSON.stringify(toolRes, null, 2)
+                }
+              ]
+            }
+          });
+        })
+        .catch((err) => {
+          send({
+            jsonrpc: "2.0",
+            id,
+            result: {
+              content: [
+                {
+                  type: "text",
+                  text: `Error executing ${toolName}: ${err?.message || String(err)}`
+                }
+              ],
+              isError: true
+            }
+          });
+        });
+      return;
+    }
+
+    if (method === "ping") {
+      send({ jsonrpc: "2.0", id, result: {} });
+      return;
+    }
+
+    send({
+      jsonrpc: "2.0",
+      id,
+      error: {
+        code: -32601,
+        message: `Method not found: ${method}`
+      }
+    });
+  }
+
+  process.stdin.setEncoding("utf8");
+  process.stdin.on("data", (chunk) => {
+    buffer += chunk;
+    while (true) {
+      if (buffer.startsWith("Content-Length:")) {
+        const headerEnd = buffer.indexOf("\r\n\r\n");
+        if (headerEnd === -1) break;
+        const lengthMatch = buffer.match(/Content-Length:\s*(\d+)/i);
+        if (!lengthMatch) {
+          buffer = buffer.slice(headerEnd + 4);
+          continue;
+        }
+        const len = parseInt(lengthMatch[1], 10);
+        const bodyStart = headerEnd + 4;
+        if (buffer.length < bodyStart + len) break;
+        const bodyStr = buffer.slice(bodyStart, bodyStart + len);
+        buffer = buffer.slice(bodyStart + len);
+        try {
+          handleMessage(JSON.parse(bodyStr));
+        } catch {}
+      } else {
+        const newlineIdx = buffer.indexOf("\n");
+        if (newlineIdx === -1) break;
+        const line = buffer.slice(0, newlineIdx).trim();
+        buffer = buffer.slice(newlineIdx + 1);
+        if (line.length > 0) {
+          try {
+            handleMessage(JSON.parse(line));
+          } catch {}
+        }
+      }
+    }
+  });
+
+  process.stdin.resume();
+}
+
+// Auto-start MCP stdio server if executed directly as a script
+if (typeof process !== "undefined" && Array.isArray(process.argv)) {
+  const currentArg = (process.argv[1] || "").replace(/\\/g, "/");
+  const isDirectRun =
+    currentArg.endsWith("/plugin.mjs") ||
+    currentArg.endsWith("/index.mjs") ||
+    currentArg.endsWith("/index.js") ||
+    currentArg.endsWith("/plugin.js") ||
+    currentArg.endsWith("/index.cjs") ||
+    currentArg.endsWith("/plugin.cjs") ||
+    currentArg.endsWith("/payguard") ||
+    process.env.MCP_STDIO === "1" ||
+    (typeof require !== "undefined" && typeof module !== "undefined" && require.main === module);
+
+  if (isDirectRun) {
+    startMcpServer(plugin);
+  }
+}
 
 export default plugin;

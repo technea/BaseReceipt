@@ -4,6 +4,29 @@
   "private": true,
   "type": "module",
   "description": "PayBox-oriented URL phishing checks, x402 payment-intent policy checks, and privacy-conscious threat-report drafts",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "payguard": "dist/index.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    },
+    "./plugin": {
+      "import": "./dist/plugin.mjs",
+      "require": "./dist/plugin.cjs",
+      "default": "./dist/plugin.mjs"
+    }
+  },
+  "files": [
+    "dist",
+    "index.js",
+    "index.cjs"
+  ],
   "scripts": {
     "test": "node --test test/*.test.mjs",
     "build": "node scripts/build.mjs",

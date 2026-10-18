@@ -108,3 +108,59 @@ test("metrics have low-cardinality labels and do not expose URL inputs", async (
   assert.ok(metrics.includes("payguard_tool_verdicts_total"));
   assert.ok(!metrics.includes("bad.example"));
 });
+
+test("server rate limiting rejects excessive requests with HTTP 429", async () => {
+  // Rapid burst of requests to trigger rate limiting
+  let got429 = false;
+  for (let i = 0; i < 150; i++) {
+    const res = await fetch(baseUrl + "/api/analyze-url", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ url: "https://example.com" })
+    });
+    if (res.status === 429) {
+      got429 = true;
+      const body = await res.json();
+      assert.ok(body.error.includes("Rate limit exceeded") || body.error.includes("Server busy"));
+      break;
+    }
+  }
+  assert.equal(got429, true, "Expected 429 rate limit response under rapid burst");
+});
+
+test("root endpoint returns service info and discovery links", async () => {
+  const response = await fetch(baseUrl + "/");
+  const body = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(body.service, "payguard");
+  assert.ok(body.endpoints.health);
+  assert.ok(body.endpoints.analyzeUrl);
+  assert.ok(body.endpoints.bazaar);
+});
+
+test("bazaar discovery metadata is accessible at well-known path", async () => {
+  const response = await fetch(baseUrl + "/.well-known/x402-bazaar.json");
+  const body = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(body.info.name, "PayGuard Security Service");
+  assert.ok(Array.isArray(body.info.endpoints));
+});
+
+test("CORS preflight OPTIONS returns 204 with permissive origin", async () => {
+  const response = await fetch(baseUrl + "/api/analyze-url", {
+    method: "OPTIONS"
+  });
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("access-control-allow-origin"), "*");
+  assert.ok(response.headers.get("access-control-allow-methods")?.includes("POST"));
+});
+
+test("server.js exports default HTTP server instance", async () => {
+  const mod = await import("../server.js");
+  assert.ok(mod.default);
+  assert.equal(typeof mod.default.listen, "function");
+  if (mod.default.listening) {
+    await new Promise(resolve => mod.default.close(resolve));
+  }
+});
+
