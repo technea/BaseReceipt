@@ -164,3 +164,24 @@ test("server.js exports default HTTP server instance", async () => {
   }
 });
 
+test("GET /dashboard serves interactive HTML web application", async () => {
+  const response = await fetch(baseUrl + "/dashboard");
+  assert.equal(response.status, 200);
+  assert.ok(response.headers.get("content-type")?.includes("text/html"));
+  const html = await response.text();
+  assert.ok(html.includes("PayGuard"));
+  assert.ok(html.includes("URL Sentinel"));
+  assert.ok(html.includes("Payment Guard"));
+});
+
+test("GET / with Accept: text/html serves interactive web dashboard to browsers", async () => {
+  const response = await fetch(baseUrl + "/", {
+    headers: { "accept": "text/html,application/xhtml+xml" }
+  });
+  assert.equal(response.status, 200);
+  assert.ok(response.headers.get("content-type")?.includes("text/html"));
+  const html = await response.text();
+  assert.ok(html.includes("<!DOCTYPE html>"));
+  assert.ok(html.includes("PayGuard"));
+});
+

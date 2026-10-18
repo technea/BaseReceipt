@@ -103,6 +103,15 @@ The local API defaults to `http://127.0.0.1:8080` and provides `GET /health`, `G
 
 The supplied URL is parsed but never visited. Reputation lookup is disabled unless a request explicitly sets `checkReputation: true` and the server-side `GOOGLE_WEB_RISK_API_KEY` is configured.
 
+### Interactive Web Dashboard
+
+Open `http://127.0.0.1:8080/dashboard` (or simply visit the root URL `http://127.0.0.1:8080` in any web browser) to access the interactive PayGuard UI:
+- **Telemetry & Service Health**: Real-time health check, uptime, total request counter, and in-flight request status.
+- **URL Sentinel Scanner**: Interactive sandbox with preset attack simulations (Unicode homoglyphs, brand spoofing, subdomain/suffix bypasses, credential leak detection) and instant verdict rationale.
+- **Payment Guard Policy Studio**: Test autonomous agent payment criteria against custom policies (`PASS`, `REVIEW`, `BLOCK`).
+- **Threat Report Studio**: Produce sanitized incident report drafts with client-side credential redaction and JSON export.
+- **x402 Bazaar Discovery & Simulator**: View registered payment-gated capabilities and inspect simulated HTTP 402 challenge payloads.
+
 ### Start Grafana and Prometheus
 
 Copy `.env.example` to `.env`, then set a long, unique value for `GRAFANA_ADMIN_PASSWORD`. Keep `.env` private.

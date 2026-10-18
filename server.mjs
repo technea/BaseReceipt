@@ -1,6 +1,15 @@
 import http from "node:http";
+import { readFileSync, existsSync } from "node:fs";
 import { analyzeUrlSecurity, evaluatePaymentIntent, prepareThreatReport } from "./src/plugin.mjs";
 import { BAZAAR_DISCOVERY_METADATA, build402Challenge, verifyPaymentProof } from "./paybox.mjs";
+
+const dashboardPath = new URL("./public/index.html", import.meta.url);
+let cachedDashboardHtml = null;
+try {
+  if (existsSync(dashboardPath)) {
+    cachedDashboardHtml = readFileSync(dashboardPath, "utf8");
+  }
+} catch {}
 
 const PORT = Number.parseInt(process.env.PORT || "8080", 10);
 const HOST = process.env.HOST;
@@ -182,6 +191,24 @@ const server = http.createServer(async (req, res) => {
       return res.end();
     }
 
+    const isBrowserRequest = (req.headers["accept"] || "").includes("text/html");
+
+    if (req.method === "GET" && (parsed.pathname === "/dashboard" || ((parsed.pathname === "/" || parsed.pathname === "") && isBrowserRequest))) {
+      statusCode = 200;
+      if (!cachedDashboardHtml) {
+        try {
+          cachedDashboardHtml = readFileSync(dashboardPath, "utf8");
+        } catch {}
+      }
+      res.writeHead(statusCode, {
+        "content-type": "text/html; charset=utf-8",
+        "content-length": Buffer.byteLength(cachedDashboardHtml || ""),
+        "cache-control": "no-cache",
+        "access-control-allow-origin": "*"
+      });
+      return res.end(cachedDashboardHtml || "<h1>PayGuard Dashboard</h1>");
+    }
+
     if (req.method === "GET" && (parsed.pathname === "/" || parsed.pathname === "")) {
       statusCode = 200;
       return sendJson(res, statusCode, {
@@ -189,6 +216,7 @@ const server = http.createServer(async (req, res) => {
         version: "0.1.0",
         description: "PayGuard security-focused x402 and URL Sentinel service for AI agents",
         endpoints: {
+          dashboard: "/dashboard",
           health: "/health",
           analyzeUrl: "/api/analyze-url",
           checkPayment: "/api/check-payment",

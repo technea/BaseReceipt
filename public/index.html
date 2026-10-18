@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PayGuard — AI Agent Security & x402 Policy Guard</title>
+  <meta name="description" content="Production-ready security gateway and x402 policy guard for AI agents on the PayBox Marketplace.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070a12;
+      --bg-card: rgba(15, 23, 42, 0.75);
+      --bg-card-hover: rgba(22, 33, 62, 0.85);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(0, 240, 255, 0.3);
+      --cyan: #00f0ff;
+      --cyan-glow: rgba(0, 240, 255, 0.2);
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.2);
+      --violet: #818cf8;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --rose-glow: rgba(244, 63, 94, 0.2);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 85% 20%, rgba(0, 240, 255, 0.1) 0%, transparent 45%),
+        radial-gradient(circle at 50% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Top Navigation Bar */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(16px);
+      background: rgba(7, 10, 18, 0.85);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.875rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .logo-badge {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(99, 102, 241, 0.3));
+      border: 1px solid var(--cyan);
+      box-shadow: 0 0 15px var(--cyan-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+
+    .brand-title {
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+      background: linear-gradient(to right, #ffffff, var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-tag {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: 9999px;
+      background: rgba(0, 240, 255, 0.1);
+      color: var(--cyan);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .header-pills {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .live-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--emerald);
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 10px var(--emerald);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .pill-secondary {
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+    }
+
+    /* Main Container & Tabs */
+    main {
+      flex: 1;
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.75rem;
+    }
+
+    /* Tab Controls */
+    .tab-nav {
+      display: flex;
+      gap: 0.5rem;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 0.375rem;
+      border-radius: 14px;
+      border: 1px solid var(--border-subtle);
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      flex: 1;
+      min-width: 160px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .tab-btn.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(99, 102, 241, 0.25));
+      border: 1px solid var(--cyan);
+      box-shadow: 0 0 15px var(--cyan-glow);
+    }
+
+    /* Tab Panels */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.25s ease; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Card styles */
+    .glass-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 1.75rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .card-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    /* Metric Grid */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .metric-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .metric-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+    }
+
+    .metric-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: #ffffff;
+    }
+
+    .metric-sub {
+      font-size: 0.75rem;
+      color: var(--emerald);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    /* Form & Input controls */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .input-box {
+      width: 100%;
+      background: rgba(3, 7, 18, 0.7);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .input-box:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 10px var(--cyan-glow);
+    }
+
+    textarea.input-box {
+      resize: vertical;
+      min-height: 140px;
+      line-height: 1.5;
+    }
+
+    /* Presets toolbar */
+    .preset-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+      align-items: center;
+    }
+
+    .preset-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      margin-right: 0.25rem;
+    }
+
+    .preset-chip {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.35rem 0.75rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .preset-chip:hover {
+      background: rgba(0, 240, 255, 0.1);
+      border-color: var(--cyan);
+      color: #ffffff;
+    }
+
+    /* Buttons */
+    .btn {
+      background: linear-gradient(135deg, var(--cyan), #3b82f6);
+      color: #070a12;
+      border: none;
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 0.85rem 1.5rem;
+      border-radius: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 15px var(--cyan-glow);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 25px var(--cyan-glow);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+      box-shadow: none;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: none;
+    }
+
+    /* Verdict Banner */
+    .verdict-banner {
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-top: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .verdict-banner.PASS {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid var(--emerald);
+      color: var(--emerald);
+    }
+
+    .verdict-banner.REVIEW {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid var(--amber);
+      color: var(--amber);
+    }
+
+    .verdict-banner.BLOCK, .verdict-banner.SUSPICIOUS {
+      background: rgba(244, 63, 94, 0.12);
+      border: 1px solid var(--rose);
+      color: var(--rose);
+    }
+
+    .verdict-banner.UNVERIFIED {
+      background: rgba(129, 140, 248, 0.12);
+      border: 1px solid var(--violet);
+      color: var(--violet);
+    }
+
+    .verdict-status {
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    /* Result checks chips */
+    .check-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    .check-chip {
+      background: rgba(3, 7, 18, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .check-chip.pass { border-left: 3px solid var(--emerald); }
+    .check-chip.fail { border-left: 3px solid var(--rose); }
+    .check-chip.warn { border-left: 3px solid var(--amber); }
+
+    .check-id {
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .check-detail {
+      font-size: 0.85rem;
+      color: var(--text-main);
+      line-height: 1.4;
+    }
+
+    /* Code & JSON Previews */
+    .code-preview {
+      background: rgba(2, 6, 23, 0.95);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1.25rem;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: #38bdf8;
+      overflow-x: auto;
+      max-height: 380px;
+      line-height: 1.6;
+    }
+
+    /* Security Guarantee Badges */
+    .guarantee-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .guarantee-card {
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .guarantee-card h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .guarantee-card p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 1.5rem 2rem;
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      background: rgba(7, 10, 18, 0.8);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .footer-links a:hover {
+      color: var(--cyan);
+    }
+
+    @media (max-width: 768px) {
+      header { padding: 0.75rem 1rem; }
+      main { padding: 1.25rem 1rem; }
+      .header-pills { display: none; }
+      .tab-btn { min-width: 120px; font-size: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <a href="/" class="brand">
+      <div class="logo-badge">🛡️</div>
+      <div>
+        <div class="brand-title">PayGuard</div>
+      </div>
+      <span class="brand-tag">Security Gateway</span>
+    </a>
+
+    <div class="header-pills">
+      <div class="live-status">
+        <div class="pulse-dot"></div>
+        <span id="service-status-text">Active • Read-Only Mode</span>
+      </div>
+      <div class="pill-secondary">Base Sepolia (84532)</div>
+      <div class="pill-secondary">x402 Protocol v2</div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Navigation Tabs -->
+    <nav class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('overview')">
+        <span>📊</span> Telemetry & Health
+      </button>
+      <button class="tab-btn" onclick="switchTab('url-sentinel')">
+        <span>🔍</span> URL Sentinel
+      </button>
+      <button class="tab-btn" onclick="switchTab('payment-guard')">
+        <span>💳</span> Payment Guard
+      </button>
+      <button class="tab-btn" onclick="switchTab('threat-report')">
+        <span>📋</span> Threat Reports
+      </button>
+      <button class="tab-btn" onclick="switchTab('bazaar')">
+        <span>🌐</span> x402 Bazaar Catalog
+      </button>
+    </nav>
+
+    <!-- TAB 1: OVERVIEW & TELEMETRY -->
+    <section id="tab-overview" class="tab-content active">
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-label">API Health</div>
+          <div class="metric-value" id="stat-health" style="color: var(--emerald);">200 OK</div>
+          <div class="metric-sub"><span>●</span> Advisory Read-Only</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Total Requests</div>
+          <div class="metric-value" id="stat-requests">0</div>
+          <div class="metric-sub"><span>▲</span> Live HTTP Telemetry</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">In-Flight Scans</div>
+          <div class="metric-value" id="stat-inflight">0</div>
+          <div class="metric-sub">Max Ceiling: 100</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Uptime</div>
+          <div class="metric-value" id="stat-uptime">0s</div>
+          <div class="metric-sub">Zero memory leaks</div>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">🛡️ Security Perimeter & Non-Negotiable Guarantees</div>
+            <div class="card-subtitle">Enforced architectural safety constraints for autonomous agents and user wallets</div>
+          </div>
+        </div>
+
+        <div class="guarantee-grid">
+          <div class="guarantee-card">
+            <h4>🔐 Zero Credential Access</h4>
+            <p>PayGuard never requests, stores, or handles wallet private keys, seed phrases, card details, or bearer passwords.</p>
+          </div>
+          <div class="guarantee-card">
+            <h4>🚫 Anti-SSRF In-Memory Parsing</h4>
+            <p>Target URLs are parsed strictly locally via standard URL parsers. PayGuard never opens, fetches, or triggers remote resources.</p>
+          </div>
+          <div class="guarantee-card">
+            <h4>🛡️ Sensitive-Path Redaction</h4>
+            <p>High-entropy tokens, reset hashes, invite codes, and query credentials are automatically scrubbed before any external lookup.</p>
+          </div>
+          <div class="guarantee-card">
+            <h4>⚖️ Advisory Integrity Verdicts</h4>
+            <p>PASS signals conformance between offered requirements and user policies; decisions are advisory and never execute payments.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: URL SENTINEL -->
+    <section id="tab-url-sentinel" class="tab-content">
+      <div class="glass-card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">🔍 URL Sentinel Phishing & Impersonation Inspector</div>
+            <div class="card-subtitle">Examines target URLs for Unicode homoglyphs, lookalikes, brand impersonation, and suffix attacks.</div>
+          </div>
+        </div>
+
+        <!-- Presets bar -->
+        <div class="preset-bar">
+          <span class="preset-label">Test Vectors:</span>
+          <button class="preset-chip" onclick="setUrlPreset('https://paybox.sh/checkout', 'paybox.sh')">Official PayBox Domain</button>
+          <button class="preset-chip" onclick="setUrlPreset('https://pаybox.sh/verify', 'paybox.sh')">Cyrillic Homoglyph Lookalike</button>
+          <button class="preset-chip" onclick="setUrlPreset('https://evil-paybox.sh.attacker.com/session', 'paybox.sh')">Trusted Suffix Attack</button>
+          <button class="preset-chip" onclick="setUrlPreset('https://wallet-login.example.com/reset?token=SECRET_TOKEN_999', 'example.com')">Credential Leak in URL</button>
+          <button class="preset-chip" onclick="setUrlPreset('http://bit.ly/paybox-claim', 'paybox.sh')">Insecure HTTP & Shortener</button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="sentinel-url">Target URL to Inspect</label>
+          <input type="text" id="sentinel-url" class="input-box" placeholder="https://secure-checkout.example/session" value="https://paybox.sh/checkout">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="sentinel-domain">Expected Independent Domain (Optional Allowlist)</label>
+          <input type="text" id="sentinel-domain" class="input-box" placeholder="paybox.sh" value="paybox.sh">
+        </div>
+
+        <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1rem;">
+          <button class="btn" id="btn-scan-url" onclick="runUrlSentinel()">
+            <span>⚡</span> Run URL Security Scan
+          </button>
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-muted); cursor: pointer;">
+            <input type="checkbox" id="sentinel-reputation"> Check Google Web Risk (if configured)
+          </label>
+        </div>
+
+        <!-- Sentinel Verdict Output -->
+        <div id="sentinel-verdict-container" style="display: none;">
+          <div id="sentinel-verdict-banner" class="verdict-banner">
+            <div>
+              <div class="verdict-status" id="sentinel-verdict-title">PASS</div>
+              <div id="sentinel-verdict-summary" style="font-size: 0.9rem; margin-top: 0.35rem; color: var(--text-main);">Summary description</div>
+            </div>
+            <div id="sentinel-risk-badge" class="pill-secondary" style="font-weight: 700;">LOW RISK</div>
+          </div>
+
+          <div class="check-grid" id="sentinel-checks-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: PAYMENT GUARD -->
+    <section id="tab-payment-guard" class="tab-content">
+      <div class="glass-card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">💳 Payment Guard Intent Policy Studio</div>
+            <div class="card-subtitle">Verify x402 payment requirements against an explicit caller-defined policy before paying.</div>
+          </div>
+        </div>
+
+        <div class="preset-bar">
+          <span class="preset-label">Test Vectors:</span>
+          <button class="preset-chip" onclick="setPaymentPreset('pass')">Valid Policy Match (PASS)</button>
+          <button class="preset-chip" onclick="setPaymentPreset('excessive')">Excessive Amount (BLOCK)</button>
+          <button class="preset-chip" onclick="setPaymentPreset('recipient')">Attacker Recipient Substitution (BLOCK)</button>
+          <button class="preset-chip" onclick="setPaymentPreset('network')">Network Mismatch (BLOCK)</button>
+          <button class="preset-chip" onclick="setPaymentPreset('review')">Incomplete Policy (REVIEW)</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+          <div class="form-group">
+            <label class="form-label">User Trusted Policy (Intent)</label>
+            <textarea id="policy-intent-input" class="input-box"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Offered x402 Payment Requirements</label>
+            <textarea id="policy-reqs-input" class="input-box"></textarea>
+          </div>
+        </div>
+
+        <button class="btn" onclick="runPaymentGuard()">
+          <span>⚖️</span> Compare Intent Against Requirements
+        </button>
+
+        <div id="payment-verdict-container" style="display: none;">
+          <div id="payment-verdict-banner" class="verdict-banner">
+            <div>
+              <div class="verdict-status" id="payment-verdict-title">PASS</div>
+              <div id="payment-verdict-summary" style="font-size: 0.9rem; margin-top: 0.35rem; color: var(--text-main);">Summary description</div>
+            </div>
+          </div>
+          <div class="check-grid" id="payment-checks-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: THREAT REPORT GENERATOR -->
+    <section id="tab-threat-report" class="tab-content">
+      <div class="glass-card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">📋 Privacy-Conscious Threat Report Generator</div>
+            <div class="card-subtitle">Produces audited draft threat reports with guaranteed secret and credential token redaction.</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Suspicious Target URL</label>
+          <input type="text" id="report-url" class="input-box" value="https://malicious-paybox-claim.example/login?token=SUPER_SECRET_REDACT_ME">
+        </div>
+
+        <button class="btn" onclick="generateThreatReport()">
+          <span>📝</span> Generate Redacted Draft Report
+        </button>
+
+        <div id="threat-report-container" style="display: none; margin-top: 1.5rem;">
+          <div class="card-header" style="margin-bottom: 0.75rem;">
+            <div style="font-weight: 700; color: var(--cyan); font-size: 0.95rem;">Draft Threat Report Preview (Non-Custodial)</div>
+            <button class="btn btn-secondary" onclick="copyReportJson()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+              📋 Copy Raw JSON
+            </button>
+          </div>
+          <pre class="code-preview" id="report-json-preview"></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: x402 BAZAAR CATALOG -->
+    <section id="tab-bazaar" class="tab-content">
+      <div class="glass-card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">🌐 Autonomous Agent Bazaar Service Catalog</div>
+            <div class="card-subtitle">Standard Draft 2020-12 x402 discovery metadata for AI agents and marketplace bots.</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+          <div>
+            <div style="font-weight: 700; margin-bottom: 0.75rem; color: #ffffff;">Discovered Security Endpoints</div>
+            <div id="bazaar-endpoints-list" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
+          </div>
+          <div>
+            <div style="font-weight: 700; margin-bottom: 0.75rem; color: #ffffff;">HTTP 402 Challenge Simulator</div>
+            <div class="form-group">
+              <label class="form-label">Protected Resource URL</label>
+              <input type="text" id="bazaar-resource-url" class="input-box" value="https://api.payguard.example/api/analyze-url">
+            </div>
+            <button class="btn btn-secondary" onclick="simulate402Challenge()" style="margin-bottom: 1rem;">
+              Simulate 402 Challenge Response
+            </button>
+            <pre class="code-preview" id="bazaar-challenge-output" style="max-height: 250px;"></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div>PayGuard v0.1.0 • Built for the PayBox Agent Marketplace • Zero External Runtime Dependencies</div>
+    <div class="footer-links">
+      <a href="/health" target="_blank">/health</a>
+      <a href="/metrics" target="_blank">/metrics</a>
+      <a href="/.well-known/x402-bazaar.json" target="_blank">Bazaar Metadata</a>
+      <a href="https://github.com/technea/PayGuard." target="_blank">GitHub Repo</a>
+    </div>
+  </footer>
+
+  <script>
+    // Tab Switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick')?.includes(tabId));
+      if (targetBtn) targetBtn.classList.add('active');
+      
+      const targetPanel = document.getElementById('tab-' + tabId);
+      if (targetPanel) targetPanel.classList.add('active');
+    }
+
+    // Telemetry auto-polling
+    async function updateTelemetry() {
+      try {
+        const healthRes = await fetch('/health');
+        if (healthRes.ok) {
+          const hData = await healthRes.json();
+          document.getElementById('stat-health').textContent = '200 OK';
+          document.getElementById('stat-health').style.color = 'var(--emerald)';
+        }
+
+        const metricsRes = await fetch('/metrics');
+        if (metricsRes.ok) {
+          const mText = await metricsRes.text();
+          
+          // Parse total requests
+          let totalReqs = 0;
+          const reqMatches = mText.matchAll(/payguard_http_requests_total\{[^}]*\}\s+(\d+)/g);
+          for (const m of reqMatches) totalReqs += parseInt(m[1], 10);
+          document.getElementById('stat-requests').textContent = totalReqs;
+
+          // Parse in flight
+          const inflightMatch = mText.match(/payguard_in_flight_requests\s+(\d+)/);
+          if (inflightMatch) document.getElementById('stat-inflight').textContent = inflightMatch[1];
+
+          // Parse uptime
+          const uptimeMatch = mText.match(/payguard_uptime_seconds\s+([0-9.]+)/);
+          if (uptimeMatch) {
+            const sec = Math.floor(parseFloat(uptimeMatch[1]));
+            document.getElementById('stat-uptime').textContent = sec > 60 ? `${Math.floor(sec/60)}m ${sec%60}s` : `${sec}s`;
+          }
+        }
+      } catch (err) {
+        console.warn('Telemetry fetch error:', err);
+      }
+    }
+    setInterval(updateTelemetry, 5000);
+    updateTelemetry();
+
+    // URL Sentinel Presets
+    function setUrlPreset(url, domain) {
+      document.getElementById('sentinel-url').value = url;
+      document.getElementById('sentinel-domain').value = domain;
+      runUrlSentinel();
+    }
+
+    async function runUrlSentinel() {
+      const url = document.getElementById('sentinel-url').value.trim();
+      const expectedDomain = document.getElementById('sentinel-domain').value.trim() || undefined;
+      const checkReputation = document.getElementById('sentinel-reputation').checked;
+
+      const btn = document.getElementById('btn-scan-url');
+      btn.textContent = '⏳ Scanning...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/analyze-url', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ url, expectedDomain, checkReputation })
+        });
+        const data = await res.json();
+        renderSentinelResult(data);
+      } catch (err) {
+        alert('Scan request failed: ' + err.message);
+      } finally {
+        btn.innerHTML = '<span>⚡</span> Run URL Security Scan';
+        btn.disabled = false;
+        updateTelemetry();
+      }
+    }
+
+    function renderSentinelResult(data) {
+      const container = document.getElementById('sentinel-verdict-container');
+      const banner = document.getElementById('sentinel-verdict-banner');
+      const title = document.getElementById('sentinel-verdict-title');
+      const summary = document.getElementById('sentinel-verdict-summary');
+      const riskBadge = document.getElementById('sentinel-risk-badge');
+      const grid = document.getElementById('sentinel-checks-grid');
+
+      container.style.display = 'block';
+      const verdict = data.verdict || 'UNVERIFIED';
+      banner.className = 'verdict-banner ' + (verdict === 'EXPECTED_DOMAIN_MATCH' ? 'PASS' : verdict);
+      title.textContent = verdict.replace(/_/g, ' ');
+      summary.textContent = data.summary || 'Security assessment completed.';
+      riskBadge.textContent = 'RISK: ' + (data.riskLevel || 'UNKNOWN');
+
+      grid.innerHTML = (data.checks || []).map(c => `
+        <div class="check-chip ${c.status === 'pass' ? 'pass' : c.status === 'fail' ? 'fail' : 'warn'}">
+          <div class="check-id">${c.id}</div>
+          <div class="check-detail">${c.detail}</div>
+        </div>
+      `).join('');
+    }
+
+    // Payment Guard Presets
+    const defaultIntent = {
+      expectedResourceUrl: "https://api.merchant.com/checkout",
+      maxAmountAtomic: "2000",
+      allowedNetworks: ["eip155:84532"],
+      allowedAssets: ["0x036CbD53842c5426634e7929541eC2318f3dCF7e"],
+      allowedPayTo: ["0x20556F0cfA3f93F0206faeb5452d2745e1423469"],
+      allowedSchemes: ["exact"],
+      maxTimeoutSeconds: 300
+    };
+
+    const paymentPresets = {
+      pass: {
+        intent: defaultIntent,
+        reqs: {
+          resource: "https://api.merchant.com/checkout",
+          accepts: [{
+            scheme: "exact",
+            network: "eip155:84532",
+            asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+            payTo: "0x20556F0cfA3f93F0206faeb5452d2745e1423469",
+            amount: "1000",
+            maxTimeoutSeconds: 120
+          }]
+        }
+      },
+      excessive: {
+        intent: defaultIntent,
+        reqs: {
+          resource: "https://api.merchant.com/checkout",
+          accepts: [{
+            scheme: "exact",
+            network: "eip155:84532",
+            asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+            payTo: "0x20556F0cfA3f93F0206faeb5452d2745e1423469",
+            amount: "999999999",
+            maxTimeoutSeconds: 120
+          }]
+        }
+      },
+      recipient: {
+        intent: defaultIntent,
+        reqs: {
+          resource: "https://api.merchant.com/checkout",
+          accepts: [{
+            scheme: "exact",
+            network: "eip155:84532",
+            asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+            payTo: "0xATTACKER_UNAUTHORIZED_WALLET",
+            amount: "1000",
+            maxTimeoutSeconds: 120
+          }]
+        }
+      },
+      network: {
+        intent: defaultIntent,
+        reqs: {
+          resource: "https://api.merchant.com/checkout",
+          accepts: [{
+            scheme: "exact",
+            network: "eip155:1", // Mainnet instead of Sepolia
+            asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+            payTo: "0x20556F0cfA3f93F0206faeb5452d2745e1423469",
+            amount: "1000",
+            maxTimeoutSeconds: 120
+          }]
+        }
+      },
+      review: {
+        intent: {
+          expectedResourceUrl: "https://api.merchant.com/checkout",
+          maxAmountAtomic: "2000"
+          // Missing allowedPayTo allowlist -> triggers REVIEW
+        },
+        reqs: {
+          resource: "https://api.merchant.com/checkout",
+          accepts: [{
+            scheme: "exact",
+            network: "eip155:84532",
+            asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+            payTo: "0x20556F0cfA3f93F0206faeb5452d2745e1423469",
+            amount: "1000",
+            maxTimeoutSeconds: 120
+          }]
+        }
+      }
+    };
+
+    function setPaymentPreset(key) {
+      const p = paymentPresets[key];
+      if (!p) return;
+      document.getElementById('policy-intent-input').value = JSON.stringify(p.intent, null, 2);
+      document.getElementById('policy-reqs-input').value = JSON.stringify(p.reqs, null, 2);
+      runPaymentGuard();
+    }
+
+    async function runPaymentGuard() {
+      try {
+        const intent = JSON.parse(document.getElementById('policy-intent-input').value);
+        const paymentRequirements = JSON.parse(document.getElementById('policy-reqs-input').value);
+
+        const res = await fetch('/api/check-payment', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ intent, paymentRequirements })
+        });
+        const data = await res.json();
+        renderPaymentResult(data);
+      } catch (err) {
+        alert('Invalid JSON in policy or payment requirements: ' + err.message);
+      }
+    }
+
+    function renderPaymentResult(data) {
+      const container = document.getElementById('payment-verdict-container');
+      const banner = document.getElementById('payment-verdict-banner');
+      const title = document.getElementById('payment-verdict-title');
+      const summary = document.getElementById('payment-verdict-summary');
+      const grid = document.getElementById('payment-checks-grid');
+
+      container.style.display = 'block';
+      const status = data.status || 'REVIEW';
+      banner.className = 'verdict-banner ' + status;
+      title.textContent = status;
+      summary.textContent = status === 'PASS' ? 'Payment requirement fully complies with trusted user intent.' : 
+                            status === 'BLOCK' ? 'Requirement violates user policy; payment MUST be rejected.' : 
+                            'Incomplete policy or candidate mismatch; manual review required.';
+
+      grid.innerHTML = (data.checks || []).map(c => `
+        <div class="check-chip ${c.status === 'pass' ? 'pass' : c.status === 'fail' ? 'fail' : 'warn'}">
+          <div class="check-id">${c.id}</div>
+          <div class="check-detail">${c.detail}</div>
+        </div>
+      `).join('');
+    }
+
+    // Threat Report Generator
+    let currentReportJson = '';
+    async function generateThreatReport() {
+      const url = document.getElementById('report-url').value.trim();
+      try {
+        const res = await fetch('/api/threat-report', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        const data = await res.json();
+        currentReportJson = JSON.stringify(data, null, 2);
+        document.getElementById('report-json-preview').textContent = currentReportJson;
+        document.getElementById('threat-report-container').style.display = 'block';
+      } catch (err) {
+        alert('Threat report generation failed: ' + err.message);
+      }
+    }
+
+    function copyReportJson() {
+      if (!currentReportJson) return;
+      navigator.clipboard.writeText(currentReportJson).then(() => alert('Report JSON copied to clipboard!'));
+    }
+
+    // Bazaar Loader
+    async function loadBazaarData() {
+      try {
+        const res = await fetch('/.well-known/x402-bazaar.json');
+        if (!res.ok) return;
+        const b = await res.json();
+        const list = document.getElementById('bazaar-endpoints-list');
+        list.innerHTML = (b.info?.endpoints || []).map(ep => `
+          <div class="glass-card" style="padding: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <span class="pill-secondary" style="font-weight: 700; color: var(--cyan);">${ep.method} ${ep.path}</span>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">${ep.description}</div>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.warn('Bazaar load error:', e);
+      }
+    }
+
+    function simulate402Challenge() {
+      const resource = document.getElementById('bazaar-resource-url').value;
+      const challenge = {
+        status: 402,
+        headers: {
+          "www-authenticate": 'x402 scheme="exact" network="eip155:84532" asset="0x036CbD53842c5426634e7929541eC2318f3dCF7e" amount="1000" payTo="0x20556F0cfA3f93F0206faeb5452d2745e1423469"',
+          "content-type": "application/json; charset=utf-8"
+        },
+        body: {
+          error: "Payment Required",
+          resource,
+          accepts: [{
+            scheme: "exact",
+            network: "eip155:84532",
+            asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+            payTo: "0x20556F0cfA3f93F0206faeb5452d2745e1423469",
+            amount: "1000",
+            maxTimeoutSeconds: 300
+          }]
+        }
+      };
+      document.getElementById('bazaar-challenge-output').textContent = JSON.stringify(challenge, null, 2);
+    }
+
+    // Initialize defaults
+    setPaymentPreset('pass');
+    loadBazaarData();
+    simulate402Challenge();
+  </script>
+</body>
+</html>
