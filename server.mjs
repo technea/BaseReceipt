@@ -171,7 +171,7 @@ const routes = new Map([
   }]
 ]);
 
-const server = http.createServer(async (req, res) => {
+async function requestHandler(req, res) {
   const started = process.hrtime.bigint();
   let route = "other";
   let statusCode = 500;
@@ -304,31 +304,41 @@ const server = http.createServer(async (req, res) => {
       recordRequest(route, statusCode, elapsed);
     }
   }
-});
+}
+
+const server = http.createServer(requestHandler);
 
 server.requestTimeout = 10_000;
 server.headersTimeout = 5_000;
 server.keepAliveTimeout = 5_000;
 server.maxRequestsPerSocket = 500;
 
-if (HOST) {
-  server.listen(PORT, HOST, () => {
-    const addr = server.address();
-    console.log(`PayGuard API listening on ${HOST}:${typeof addr === "object" && addr ? addr.port : PORT}`);
-  });
-} else {
-  server.listen(PORT, () => {
-    const addr = server.address();
-    console.log(`PayGuard API listening on port ${typeof addr === "object" && addr ? addr.port : PORT}`);
-  });
+const isDirectRun = process.argv[1] && (
+  process.argv[1].endsWith("server.mjs") ||
+  process.argv[1].endsWith("server.js")
+);
+
+if (isDirectRun || process.env.PAYGUARD_START_LISTEN === "true") {
+  if (HOST) {
+    server.listen(PORT, HOST, () => {
+      const addr = server.address();
+      console.log(`PayGuard API listening on ${HOST}:${typeof addr === "object" && addr ? addr.port : PORT}`);
+    });
+  } else {
+    server.listen(PORT, () => {
+      const addr = server.address();
+      console.log(`PayGuard API listening on port ${typeof addr === "object" && addr ? addr.port : PORT}`);
+    });
+  }
+
+  function shutdown() {
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(1), 5000).unref();
+  }
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 }
 
-function shutdown() {
-  server.close(() => process.exit(0));
-  setTimeout(() => process.exit(1), 5000).unref();
-}
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
+export { server, requestHandler, routes, checkRateLimit, sendJson, readJson };
+export default requestHandler;
 
-export { server, routes, checkRateLimit, sendJson, readJson };
-export default server;
