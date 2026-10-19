@@ -223,13 +223,14 @@ async function requestHandler(req, res) {
       if (!cachedDashboardHtml) {
         cachedDashboardHtml = loadDashboardHtml();
       }
+      const responseHtml = cachedDashboardHtml || "<!DOCTYPE html><html><head><title>PayGuard</title></head><body><h1>PayGuard Dashboard</h1></body></html>";
       res.writeHead(statusCode, {
         "content-type": "text/html; charset=utf-8",
-        "content-length": Buffer.byteLength(cachedDashboardHtml || ""),
+        "content-length": Buffer.byteLength(responseHtml),
         "cache-control": "no-cache",
         "access-control-allow-origin": "*"
       });
-      return res.end(cachedDashboardHtml || "<h1>PayGuard Dashboard</h1>");
+      return res.end(responseHtml);
     }
 
     if (req.method === "GET" && (parsed.pathname === "/" || parsed.pathname === "")) {
