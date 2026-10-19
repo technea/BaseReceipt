@@ -3,13 +3,25 @@ import { readFileSync, existsSync } from "node:fs";
 import { analyzeUrlSecurity, evaluatePaymentIntent, prepareThreatReport } from "./src/plugin.mjs";
 import { BAZAAR_DISCOVERY_METADATA, build402Challenge, verifyPaymentProof } from "./paybox.mjs";
 
-const dashboardPath = new URL("./public/index.html", import.meta.url);
-let cachedDashboardHtml = null;
-try {
-  if (existsSync(dashboardPath)) {
-    cachedDashboardHtml = readFileSync(dashboardPath, "utf8");
+import path from "node:path";
+
+function loadDashboardHtml() {
+  const candidates = [
+    new URL("./public/index.html", import.meta.url),
+    new URL("../public/index.html", import.meta.url),
+    path.join(process.cwd(), "public", "index.html"),
+    path.join(process.cwd(), "index.html")
+  ];
+  for (const candidate of candidates) {
+    try {
+      if (existsSync(candidate)) {
+        return readFileSync(candidate, "utf8");
+      }
+    } catch {}
   }
-} catch {}
+  return null;
+}
+let cachedDashboardHtml = loadDashboardHtml();
 
 const PORT = Number.parseInt(process.env.PORT || "8080", 10);
 const HOST = process.env.HOST;
@@ -123,6 +135,19 @@ function sendJson(res, statusCode, data, extraHeaders = {}) {
   res.end(body);
 }
 async function readJson(req) {
+  // In Vercel serverless functions, req.body is often already parsed or buffered
+  if (req.body !== undefined && req.body !== null) {
+    if (typeof req.body === "object") return req.body;
+    if (typeof req.body === "string") {
+      try { return JSON.parse(req.body); }
+      catch {
+        const error = new Error("Request body must contain valid JSON.");
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+  }
+
   const contentType = String(req.headers["content-type"] || "").split(";")[0].trim().toLowerCase();
   if (contentType !== "application/json") {
     const error = new Error("Content-Type must be application/json.");
@@ -196,9 +221,7 @@ async function requestHandler(req, res) {
     if (req.method === "GET" && (parsed.pathname === "/dashboard" || ((parsed.pathname === "/" || parsed.pathname === "") && isBrowserRequest))) {
       statusCode = 200;
       if (!cachedDashboardHtml) {
-        try {
-          cachedDashboardHtml = readFileSync(dashboardPath, "utf8");
-        } catch {}
+        cachedDashboardHtml = loadDashboardHtml();
       }
       res.writeHead(statusCode, {
         "content-type": "text/html; charset=utf-8",
@@ -294,8 +317,9 @@ async function requestHandler(req, res) {
     statusCode = 200;
     return sendJson(res, statusCode, result, extraHeaders);
   } catch (error) {
+    console.error("[PayGuard Server Error]", error);
     statusCode = Number.isInteger(error && error.statusCode) ? error.statusCode : 500;
-    const message = statusCode >= 500 ? "Internal error. Request details were not logged." : error.message;
+    const message = statusCode >= 500 ? (process.env.NODE_ENV === "development" ? (error.stack || error.message) : "Internal error. Check server logs.") : error.message;
     return sendJson(res, statusCode, { error: message });
   } finally {
     inFlight = Math.max(0, inFlight - 1);

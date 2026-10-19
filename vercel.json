@@ -1,5 +1,10 @@
 {
   "version": 2,
+  "functions": {
+    "api/index.mjs": {
+      "includeFiles": "public/**"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",
