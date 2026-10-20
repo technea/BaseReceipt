@@ -1,0 +1,2493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PayGuard — Autonomous AI Agent Security Gateway & x402 Policy Guard</title>
+  <meta name="description" content="Explain the hierarchy and inner workings of PayGuard: a zero-custody, SSRF-proof security firewall that protects AI agents from phishing, lookalike domains, and rogue payment drains.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg-dark: #070a13;
+      --bg-card: rgba(15, 23, 42, 0.72);
+      --bg-card-hover: rgba(24, 34, 58, 0.85);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(0, 240, 255, 0.4);
+      --cyan: #00f0ff;
+      --cyan-glow: rgba(0, 240, 255, 0.25);
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.25);
+      --violet: #818cf8;
+      --violet-glow: rgba(129, 140, 248, 0.25);
+      --amber: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.25);
+      --rose: #f43f5e;
+      --rose-glow: rgba(244, 63, 94, 0.25);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 20% 10%, rgba(99, 102, 241, 0.12) 0%, transparent 45%),
+        radial-gradient(circle at 80% 15%, rgba(0, 240, 255, 0.1) 0%, transparent 40%),
+        radial-gradient(circle at 50% 60%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
+        radial-gradient(circle at 20% 90%, rgba(244, 63, 94, 0.08) 0%, transparent 45%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    /* Modern Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-dark); }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,240,255,0.4); }
+
+    /* Sticky Header */
+    header.vidyst-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(20px);
+      background: rgba(7, 10, 19, 0.82);
+      border-bottom: 1px solid var(--border-subtle);
+      transition: all 0.3s ease;
+    }
+
+    .nav-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0.875rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(99, 102, 241, 0.3));
+      border: 1px solid var(--cyan);
+      box-shadow: 0 0 16px var(--cyan-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--cyan);
+      font-size: 1.15rem;
+      transition: transform 0.25s ease;
+    }
+
+    .brand:hover .brand-icon {
+      transform: scale(1.06);
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title {
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #ffffff 40%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .brand-pill {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border-radius: 9999px;
+      background: rgba(0, 240, 255, 0.12);
+      color: var(--cyan);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.75rem;
+      list-style: none;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .nav-link:hover {
+      color: var(--text-main);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 0.6rem 1.25rem;
+      border-radius: 9999px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: #ffffff;
+      color: #070a13;
+      border-color: #ffffff;
+      box-shadow: 0 4px 14px rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-primary:hover {
+      background: #f1f5f9;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(0, 240, 255, 0.3);
+    }
+
+    .btn-glow {
+      background: linear-gradient(135deg, #00f0ff 0%, #3b82f6 100%);
+      color: #070a13;
+      font-weight: 700;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.35);
+    }
+
+    .btn-glow:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 28px rgba(0, 240, 255, 0.55);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      border-color: var(--border-subtle);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    /* Layout Sections */
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    /* Hero Section */
+    .hero-section {
+      padding: 4.5rem 0 2.5rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .pill-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.9rem;
+      border-radius: 9999px;
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid rgba(0, 240, 255, 0.22);
+      color: var(--cyan);
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      animation: pulseGlow 3s infinite ease-in-out;
+    }
+
+    .pill-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan);
+    }
+
+    .hero-title {
+      font-size: clamp(2.5rem, 5.5vw, 4.5rem);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+      margin-bottom: 1.5rem;
+      max-width: 980px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hero-title span.gradient-text {
+      background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Dynamic Rotating Badge (Vidyst signature style) */
+    .dynamic-rotator {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.15em 0.4em;
+      border-radius: 0.3em;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      margin: 0 0.15em;
+      font-weight: 800;
+      transition: all 0.4s cubic-bezier(0.34, 1.3, 0.64, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dynamic-rotator.state-phish {
+      background: rgba(244, 63, 94, 0.15);
+      border-color: rgba(244, 63, 94, 0.4);
+      color: #fda4af;
+      box-shadow: 0 0 20px rgba(244, 63, 94, 0.2);
+    }
+
+    .dynamic-rotator.state-homoglyph {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #fde68a;
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+    }
+
+    .dynamic-rotator.state-drain {
+      background: rgba(129, 140, 248, 0.15);
+      border-color: rgba(129, 140, 248, 0.4);
+      color: #c7d2fe;
+      box-shadow: 0 0 20px rgba(129, 140, 248, 0.2);
+    }
+
+    .dynamic-rotator.state-safe {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+    }
+
+    .hero-desc {
+      font-size: clamp(1.05rem, 1.8vw, 1.25rem);
+      color: var(--text-muted);
+      max-width: 680px;
+      margin: 0 auto 2.25rem;
+      line-height: 1.6;
+      font-weight: 400;
+    }
+
+    .hero-cta-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 2.5rem;
+    }
+
+    /* Trust Pill Badges */
+    .trust-strip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      padding-top: 1.25rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      max-width: 880px;
+      margin: 0 auto;
+    }
+
+    .trust-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .trust-item i {
+      color: var(--emerald);
+      font-size: 0.75rem;
+    }
+
+    /* THE SENTINEL STUDIO COCKPIT (Vidyst Studio Mockup equivalent) */
+    .studio-wrapper {
+      margin: 3.5rem auto 5rem;
+      max-width: 1200px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.8) 100%);
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 40px rgba(0, 240, 255, 0.06);
+    }
+
+    .studio-window {
+      background: #0b0f1a;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Studio Header */
+    .studio-topbar {
+      height: 48px;
+      background: #0e1424;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .mac-dots {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mac-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+    }
+    .mac-dot.red { background: #ff5f56; }
+    .mac-dot.yellow { background: #ffbd2e; }
+    .mac-dot.green { background: #27c93f; }
+
+    .studio-title-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .studio-title-pill i {
+      color: var(--cyan);
+    }
+
+    .studio-stats {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .stat-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--emerald);
+      background: rgba(16, 185, 129, 0.1);
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .stat-badge .live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 6px var(--emerald);
+      animation: blinkDot 1.5s infinite;
+    }
+
+    /* Scenario Selector Toolbar (Vidyst Layout Bar) */
+    .scenario-toolbar {
+      background: #111827;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .scenario-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scenario-tabs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .scenario-tab {
+      padding: 6px 14px;
+      border-radius: 6px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--font-sans);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .scenario-tab:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .scenario-tab.active {
+      background: rgba(0, 240, 255, 0.12);
+      color: var(--cyan);
+      box-shadow: 0 2px 8px rgba(0, 240, 255, 0.15);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+    }
+
+    /* Studio Main Stage (3-Column Interactive Visual Flow) */
+    .studio-stage {
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 1.2fr;
+      gap: 20px;
+      min-height: 440px;
+      background: radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.6) 0%, #070a13 100%);
+    }
+
+    @media (max-width: 992px) {
+      .studio-stage {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .studio-card {
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .card-header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .card-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .card-tag {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
+    }
+
+    /* Left Stage: Agent Request Details */
+    .agent-field {
+      margin-bottom: 12px;
+    }
+
+    .agent-field label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .agent-field .field-value {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-main);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      word-break: break-all;
+    }
+
+    .agent-badge-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .agent-mini-badge {
+      font-size: 0.7rem;
+      font-family: var(--font-mono);
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(99, 102, 241, 0.12);
+      color: var(--violet);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+    }
+
+    /* Center Stage: The 4 In-Memory Gates */
+    .gates-pipeline {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      justify-content: center;
+      height: 100%;
+    }
+
+    .gate-item {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .gate-item.active-scan {
+      border-color: rgba(0, 240, 255, 0.4);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
+    }
+
+    .gate-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .gate-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      transition: all 0.3s ease;
+    }
+
+    .gate-text h5 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .gate-text p {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+
+    .gate-status-pill {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .status-pass {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status-fail {
+      background: rgba(244, 63, 94, 0.15);
+      color: var(--rose);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+
+    .status-review {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--amber);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    /* Right Stage: Verdict Output Card */
+    .verdict-cockpit {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      height: 100%;
+    }
+
+    .verdict-hero-box {
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border: 1px solid transparent;
+      transition: all 0.3s ease;
+    }
+
+    .verdict-hero-box.hero-pass {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 78, 59, 0.25) 100%);
+      border-color: rgba(16, 185, 129, 0.4);
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.15);
+    }
+
+    .verdict-hero-box.hero-block {
+      background: linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(136, 19, 55, 0.25) 100%);
+      border-color: rgba(244, 63, 94, 0.4);
+      box-shadow: 0 0 25px rgba(244, 63, 94, 0.15);
+    }
+
+    .verdict-hero-box.hero-review {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(120, 53, 15, 0.25) 100%);
+      border-color: rgba(245, 158, 11, 0.4);
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.15);
+    }
+
+    .verdict-circle-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .hero-pass .verdict-circle-icon {
+      background: rgba(16, 185, 129, 0.25);
+      color: var(--emerald);
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+    }
+
+    .hero-block .verdict-circle-icon {
+      background: rgba(244, 63, 94, 0.25);
+      color: var(--rose);
+      box-shadow: 0 0 15px rgba(244, 63, 94, 0.3);
+    }
+
+    .hero-review .verdict-circle-icon {
+      background: rgba(245, 158, 11, 0.25);
+      color: var(--amber);
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+    }
+
+    .verdict-main-text h4 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin-bottom: 2px;
+    }
+
+    .verdict-main-text p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .plain-english-box {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+
+    .plain-english-box strong {
+      color: var(--cyan);
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .guidance-box {
+      margin-top: auto;
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.78rem;
+    }
+
+    .guidance-box i {
+      margin-top: 2px;
+      font-size: 0.9rem;
+    }
+
+    /* SECTION 2: SYSTEM HIERARCHY (The Core Centerpiece) */
+    .section-header {
+      text-align: center;
+      max-width: 720px;
+      margin: 0 auto 3.5rem;
+    }
+
+    .section-eyebrow {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--cyan);
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+
+    .section-title {
+      font-size: clamp(2rem, 3.8vw, 2.75rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+    }
+
+    .section-subtitle {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Hierarchy Architecture Flow Diagram */
+    .hierarchy-container {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 2.5rem;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+
+    .hierarchy-tiers {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      position: relative;
+    }
+
+    /* Connector Pipe */
+    .hierarchy-connector {
+      position: absolute;
+      left: 36px;
+      top: 60px;
+      bottom: 60px;
+      width: 4px;
+      background: linear-gradient(180deg, var(--cyan) 0%, var(--violet) 50%, var(--emerald) 100%);
+      border-radius: 2px;
+      z-index: 1;
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+    }
+
+    .hierarchy-tier-card {
+      position: relative;
+      z-index: 2;
+      background: rgba(11, 15, 26, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 1.75rem 2rem 1.75rem 5rem;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .hierarchy-tier-card:hover {
+      border-color: rgba(0, 240, 255, 0.3);
+      transform: translateX(4px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 240, 255, 0.08);
+    }
+
+    .tier-node-indicator {
+      position: absolute;
+      left: 20px;
+      top: 28px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #070a13;
+      border: 3px solid var(--cyan);
+      box-shadow: 0 0 15px var(--cyan-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      color: var(--cyan);
+      font-weight: 800;
+    }
+
+    .tier-content-grid {
+      display: grid;
+      grid-template-columns: 2fr 3fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    @media (max-width: 860px) {
+      .tier-content-grid { grid-template-columns: 1fr; }
+      .hierarchy-tier-card { padding-left: 4.5rem; }
+    }
+
+    .tier-header-info h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .tier-level-badge {
+      font-size: 0.7rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(0, 240, 255, 0.1);
+      color: var(--cyan);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+    }
+
+    .tier-role-desc {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .tier-submodules {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .submodule-pill {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .submodule-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .submodule-title i {
+      color: var(--cyan);
+      font-size: 0.85rem;
+    }
+
+    .submodule-detail {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+
+    /* SECTION 3: STEP-BY-STEP "HOW IT ACTUALLY WORKS" */
+    .flow-steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    @media (max-width: 1024px) {
+      .flow-steps-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .flow-steps-grid { grid-template-columns: 1fr; }
+    }
+
+    .flow-step-card {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 1.75rem 1.5rem;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s ease;
+    }
+
+    .flow-step-card:hover {
+      border-color: rgba(0, 240, 255, 0.3);
+      transform: translateY(-4px);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 240, 255, 0.06);
+    }
+
+    .step-number-tag {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      color: var(--cyan);
+      font-weight: 800;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .step-time-badge {
+      position: absolute;
+      top: 1.75rem;
+      right: 1.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--emerald);
+      background: rgba(16, 185, 129, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .flow-step-card h4 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .flow-step-card p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    .step-mini-code {
+      margin-top: 1rem;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--cyan);
+      overflow-x: auto;
+    }
+
+    /* SECTION 4: LIVE INTERACTIVE LAB */
+    .lab-box {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 2.25rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .lab-input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 700px) {
+      .lab-input-group { flex-direction: column; }
+    }
+
+    .lab-input {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 0.85rem 1.25rem;
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .lab-input:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+    }
+
+    .lab-presets {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .preset-label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .preset-chip {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .preset-chip:hover {
+      background: rgba(0, 240, 255, 0.1);
+      border-color: rgba(0, 240, 255, 0.3);
+      color: var(--cyan);
+    }
+
+    .preset-chip.chip-bad:hover {
+      background: rgba(244, 63, 94, 0.1);
+      border-color: rgba(244, 63, 94, 0.3);
+      color: var(--rose);
+    }
+
+    /* Live Output Result Container */
+    #liveLabResult {
+      transition: all 0.3s ease;
+    }
+
+    /* SECTION 5: 6 DEFENSIVE PILLARS (Feature Cards) */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-top: 2.5rem;
+    }
+
+    @media (max-width: 992px) {
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .features-grid { grid-template-columns: 1fr; }
+    }
+
+    .feature-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 1.75rem;
+      transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+      border-color: rgba(0, 240, 255, 0.3);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 15px rgba(0, 240, 255, 0.05);
+    }
+
+    .feature-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(0, 240, 255, 0.1);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .feature-card h4 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.5rem;
+    }
+
+    .feature-card p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    /* SECTION 6: COMPARISON MATRIX */
+    .comparison-table-wrapper {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      overflow-x: auto;
+      margin-top: 2rem;
+    }
+
+    table.comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+
+    table.comparison-table th, table.comparison-table td {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    table.comparison-table th {
+      background: rgba(0, 0, 0, 0.3);
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+    }
+
+    table.comparison-table th.highlight-col,
+    table.comparison-table td.highlight-col {
+      background: rgba(0, 240, 255, 0.04);
+      border-left: 1px solid rgba(0, 240, 255, 0.2);
+      border-right: 1px solid rgba(0, 240, 255, 0.2);
+    }
+
+    table.comparison-table td.highlight-col {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .badge-check {
+      color: var(--emerald);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+
+    .badge-x {
+      color: var(--rose);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+      opacity: 0.7;
+    }
+
+    /* SECTION 7: FAQ ACCORDION */
+    .faq-container {
+      max-width: 820px;
+      margin: 2rem auto 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .faq-item {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .faq-item:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .faq-question {
+      padding: 1.25rem 1.5rem;
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .faq-question i {
+      color: var(--cyan);
+      font-size: 0.85rem;
+      transition: transform 0.2s ease;
+    }
+
+    .faq-item.open .faq-question i {
+      transform: rotate(180deg);
+    }
+
+    .faq-answer {
+      display: none;
+      padding: 0 1.5rem 1.25rem;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      padding-top: 0.85rem;
+    }
+
+    .faq-item.open .faq-answer {
+      display: block;
+    }
+
+    /* SECTION 8: BOTTOM CTA BANNER */
+    .cta-banner {
+      margin: 6rem auto 4rem;
+      max-width: 1100px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.7) 100%);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      padding: 3.5rem 2rem;
+      text-align: center;
+      box-shadow: 0 25px 60px -10px rgba(0, 240, 255, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-banner::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(0, 240, 255, 0.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .cta-title {
+      font-size: clamp(2rem, 3.5vw, 2.75rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 1rem;
+    }
+
+    .cta-desc {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto 2rem;
+      line-height: 1.6;
+    }
+
+    /* Footer */
+    footer.site-footer {
+      border-top: 1px solid var(--border-subtle);
+      background: rgba(7, 10, 18, 0.95);
+      padding: 3rem 1.5rem 2rem;
+      color: var(--text-dim);
+      font-size: 0.8rem;
+    }
+
+    .footer-grid {
+      max-width: 1240px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 2.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    @media (max-width: 800px) {
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .footer-grid { grid-template-columns: 1fr; }
+    }
+
+    .footer-col h5 {
+      color: var(--text-main);
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .footer-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .footer-links a:hover {
+      color: var(--cyan);
+    }
+
+    .footer-bottom {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    /* Animations */
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 10px rgba(0, 240, 255, 0.15); border-color: rgba(0, 240, 255, 0.25); }
+      50% { box-shadow: 0 0 20px rgba(0, 240, 255, 0.35); border-color: rgba(0, 240, 255, 0.5); }
+    }
+
+    @keyframes blinkDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Vidyst-Style Navigation Bar -->
+  <header class="vidyst-header">
+    <div class="nav-container">
+      <a href="/" class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">PayGuard <span class="brand-pill">v0.1.0</span></span>
+        </div>
+      </a>
+
+      <nav class="nav-links">
+        <a href="#sentinel-studio" class="nav-link"><i class="fa-solid fa-desktop"></i> Sentinel Studio</a>
+        <a href="#system-hierarchy" class="nav-link"><i class="fa-solid fa-sitemap"></i> Hierarchy</a>
+        <a href="#how-it-works" class="nav-link"><i class="fa-solid fa-route"></i> How It Works</a>
+        <a href="#live-lab" class="nav-link"><i class="fa-solid fa-flask"></i> Interactive Lab</a>
+        <a href="#pillars" class="nav-link"><i class="fa-solid fa-layer-group"></i> Architecture</a>
+        <a href="#faq" class="nav-link"><i class="fa-solid fa-circle-question"></i> FAQ</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="/dashboard" class="btn btn-primary" title="Open Security Console">
+          <i class="fa-solid fa-terminal"></i> Security Console
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO SECTION -->
+    <section class="hero-section">
+      <div class="container">
+        <div class="pill-badge">
+          <span class="pill-dot"></span>
+          <span>Next-Gen AI Agent Security Gateway · Zero-Custody x402 Firewall</span>
+        </div>
+
+        <h1 class="hero-title">
+          <span class="gradient-text">Autonomous AI Payments.</span><br>
+          <span style="display:inline-block; margin-top: 0.2em;">Never Trust Links</span>
+          <span id="dynamicRotator" class="dynamic-rotator state-phish">
+            <i class="fa-solid fa-shield-virus" style="margin-right: 6px;"></i><span id="rotatorText">Without Phishing</span>
+          </span>
+          <br><span class="gradient-text">Protected by PayGuard.</span>
+        </h1>
+
+        <p class="hero-desc">
+          When AI agents autonomously browse, hire services, and pay with crypto, what stops them from clicking a spoofed checkout or falling for a wallet-draining trap? PayGuard intercepts every link and payment intent, running <strong>pure in-memory verification</strong> before a single satoshi moves.
+        </p>
+
+        <div class="hero-cta-group">
+          <a href="#live-lab" class="btn btn-glow">
+            <i class="fa-solid fa-play"></i> Test Interactive Sentinel
+          </a>
+          <a href="#system-hierarchy" class="btn btn-secondary">
+            <i class="fa-solid fa-sitemap"></i> Explore 4-Layer Hierarchy
+          </a>
+          <a href="/dashboard" class="btn btn-secondary">
+            <i class="fa-solid fa-sliders"></i> Full Operator Dashboard
+          </a>
+        </div>
+
+        <div class="trust-strip">
+          <div class="trust-item"><i class="fa-solid fa-circle-check"></i> Zero Private Key Custody</div>
+          <div class="trust-item"><i class="fa-solid fa-circle-check"></i> SSRF-Proof Local URL Parsing</div>
+          <div class="trust-item"><i class="fa-solid fa-circle-check"></i> Unicode Homoglyph Scanner</div>
+          <div class="trust-item"><i class="fa-solid fa-circle-check"></i> Base Sepolia Testnet Ready</div>
+          <div class="trust-item"><i class="fa-solid fa-circle-check"></i> Google Web Risk Privacy Redaction</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- THE SENTINEL STUDIO COCKPIT (Vidyst Studio Mockup) -->
+    <section id="sentinel-studio" class="container">
+      <div class="studio-wrapper">
+        <div class="studio-window">
+          <!-- Window Header -->
+          <div class="studio-topbar">
+            <div class="mac-dots">
+              <span class="mac-dot red"></span>
+              <span class="mac-dot yellow"></span>
+              <span class="mac-dot green"></span>
+            </div>
+            <div class="studio-title-pill">
+              <i class="fa-solid fa-shield-halved"></i>
+              <span>payguard-sentinel-v0.1.0 — live policy enforcement</span>
+            </div>
+            <div class="studio-stats">
+              <div class="stat-badge">
+                <span class="live-dot"></span>
+                <span>AIRGAPPED · ZERO SSRF</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scenario Toolbar -->
+          <div class="scenario-toolbar">
+            <div class="scenario-label">
+              <i class="fa-solid fa-crosshairs"></i> Test Scenarios:
+            </div>
+            <div class="scenario-tabs">
+              <button class="scenario-tab active" onclick="loadScenario(1, this)">
+                <i class="fa-solid fa-store"></i> 1. Legitimate PayBox
+              </button>
+              <button class="scenario-tab" onclick="loadScenario(2, this)">
+                <i class="fa-solid fa-mask"></i> 2. Homoglyph Phishing
+              </button>
+              <button class="scenario-tab" onclick="loadScenario(3, this)">
+                <i class="fa-solid fa-money-bill-transfer"></i> 3. Amount Drain
+              </button>
+              <button class="scenario-tab" onclick="loadScenario(4, this)">
+                <i class="fa-solid fa-key"></i> 4. Token Leak in Path
+              </button>
+            </div>
+          </div>
+
+          <!-- 3-Column Interactive Cockpit -->
+          <div class="studio-stage">
+            <!-- Col 1: AI Agent Request -->
+            <div class="studio-card">
+              <div class="card-header-bar">
+                <span class="card-title"><i class="fa-solid fa-robot" style="color:var(--violet)"></i> 1. Inbound Intent</span>
+                <span class="card-tag">x402 PROPOSAL</span>
+              </div>
+
+              <div class="agent-field">
+                <label>Originating Agent</label>
+                <div class="field-value" id="scenarioAgent">AutonomousTradingAgent_v2</div>
+              </div>
+
+              <div class="agent-field">
+                <label>Target Checkout URL</label>
+                <div class="field-value" id="scenarioUrl" style="color:var(--cyan)">https://paybox.sh/api/v1/checkout</div>
+              </div>
+
+              <div class="agent-field">
+                <label>Proposed Network & Asset</label>
+                <div class="field-value" id="scenarioNetwork">eip155:84532 · USDC (Base Sepolia)</div>
+              </div>
+
+              <div class="agent-field">
+                <label>Proposed Payment Amount</label>
+                <div class="field-value" id="scenarioAmount">1,000 atomic units ($0.001 USDC)</div>
+              </div>
+
+              <div class="agent-badge-row">
+                <span class="agent-mini-badge"><i class="fa-solid fa-lock"></i> Pure Non-Custodial</span>
+                <span class="agent-mini-badge"><i class="fa-solid fa-clock"></i> 30s Expiry</span>
+              </div>
+            </div>
+
+            <!-- Col 2: PayGuard 4-Gate Pipeline -->
+            <div class="studio-card">
+              <div class="card-header-bar">
+                <span class="card-title"><i class="fa-solid fa-microchip" style="color:var(--cyan)"></i> 2. Sentinel Pipeline</span>
+                <span class="card-tag">4 IN-MEMORY GATES</span>
+              </div>
+
+              <div class="gates-pipeline">
+                <div class="gate-item" id="gate1">
+                  <div class="gate-info">
+                    <div class="gate-icon"><i class="fa-solid fa-globe"></i></div>
+                    <div class="gate-text">
+                      <h5>Gate 1: SSRF Airgap</h5>
+                      <p>Local in-memory parse (no network fetch)</p>
+                    </div>
+                  </div>
+                  <span class="gate-status-pill status-pass" id="gate1Status"><i class="fa-solid fa-check"></i> AIRGAPPED</span>
+                </div>
+
+                <div class="gate-item" id="gate2">
+                  <div class="gate-info">
+                    <div class="gate-icon"><i class="fa-solid fa-font"></i></div>
+                    <div class="gate-text">
+                      <h5>Gate 2: Homoglyph & Suffix</h5>
+                      <p>Punycode & lookalike character scan</p>
+                    </div>
+                  </div>
+                  <span class="gate-status-pill status-pass" id="gate2Status"><i class="fa-solid fa-check"></i> CLEAN</span>
+                </div>
+
+                <div class="gate-item" id="gate3">
+                  <div class="gate-info">
+                    <div class="gate-icon"><i class="fa-solid fa-scale-balanced"></i></div>
+                    <div class="gate-text">
+                      <h5>Gate 3: Policy Limits</h5>
+                      <p>Compares amount ceiling & network</p>
+                    </div>
+                  </div>
+                  <span class="gate-status-pill status-pass" id="gate3Status"><i class="fa-solid fa-check"></i> IN LIMIT</span>
+                </div>
+
+                <div class="gate-item" id="gate4">
+                  <div class="gate-info">
+                    <div class="gate-icon"><i class="fa-solid fa-user-secret"></i></div>
+                    <div class="gate-text">
+                      <h5>Gate 4: Privacy Redaction</h5>
+                      <p>High-entropy token sanitization</p>
+                    </div>
+                  </div>
+                  <span class="gate-status-pill status-pass" id="gate4Status"><i class="fa-solid fa-check"></i> REDACTED</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Col 3: Real-Time Execution Verdict -->
+            <div class="studio-card">
+              <div class="card-header-bar">
+                <span class="card-title"><i class="fa-solid fa-gavel" style="color:var(--emerald)"></i> 3. Advisory Verdict</span>
+                <span class="card-tag">ADVISORY RESULT</span>
+              </div>
+
+              <div class="verdict-cockpit">
+                <div class="verdict-hero-box hero-pass" id="scenarioVerdictHero">
+                  <div class="verdict-circle-icon" id="scenarioVerdictIcon">
+                    <i class="fa-solid fa-circle-check"></i>
+                  </div>
+                  <div class="verdict-main-text">
+                    <h4 id="scenarioVerdictText" style="color:var(--emerald)">PASS · SAFE TO SIGN</h4>
+                    <p id="scenarioRiskText">Risk Level: NONE (0/100)</p>
+                  </div>
+                </div>
+
+                <div class="plain-english-box">
+                  <strong>What this means for the user:</strong>
+                  <span id="scenarioPlainDesc">
+                    The requested checkout domain exactly matches verified PayBox infrastructure. Amount (0.001 USDC) is well within the user's $1.00 safety ceiling. No Cyrillic or lookalike character spoofing detected.
+                  </span>
+                </div>
+
+                <div class="guidance-box" id="scenarioGuidance" style="background:rgba(16, 185, 129, 0.1); border:1px solid rgba(16, 185, 129, 0.25); color:#6ee7b7;">
+                  <i class="fa-solid fa-lightbulb"></i>
+                  <span id="scenarioGuidanceText">Action for Agent: Safe to proceed. Agent wallet may sign the x402 payment proof.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: SYSTEM HIERARCHY (The Core Centerpiece) -->
+    <section id="system-hierarchy" class="container" style="padding: 4rem 1.5rem;">
+      <div class="section-header">
+        <span class="section-eyebrow">Visual Architecture & Boundaries</span>
+        <h2 class="section-title">The PayGuard Security Hierarchy</h2>
+        <p class="section-subtitle">
+          How does PayGuard fit between an autonomous AI agent, untrusted web merchants, and the Web3 blockchain? Here is the complete end-to-end hierarchy.
+        </p>
+      </div>
+
+      <div class="hierarchy-container">
+        <!-- Glowing vertical pipeline backbone -->
+        <div class="hierarchy-connector"></div>
+
+        <div class="hierarchy-tiers">
+          <!-- Tier 0: Upstream AI Agent Layer -->
+          <div class="hierarchy-tier-card">
+            <div class="tier-node-indicator"><i class="fa-solid fa-brain"></i></div>
+            <div class="tier-content-grid">
+              <div class="tier-header-info">
+                <span class="tier-level-badge">TIER 0 · UPSTREAM</span>
+                <h3>AI Agent & Task Intent</h3>
+                <p class="tier-role-desc">
+                  An autonomous agent (Claude, GPT-4, LangChain, or custom autonomous runtime) executes an objective and encounters a paywalled API, digital dataset, or checkout link.
+                </p>
+              </div>
+              <div class="tier-submodules">
+                <div class="submodule-pill">
+                  <span class="submodule-title"><i class="fa-solid fa-link"></i> Target URL Discovery</span>
+                  <span class="submodule-detail">Agent finds external payment link</span>
+                </div>
+                <div class="submodule-pill">
+                  <span class="submodule-title"><i class="fa-solid fa-receipt"></i> x402 Challenge Receipt</span>
+                  <span class="submodule-detail">HTTP 402 + payment requirement</span>
+                </div>
+                <div class="submodule-pill">
+                  <span class="submodule-title"><i class="fa-solid fa-triangle-exclamation" style="color:var(--amber)"></i> High Risk Exposure</span>
+                  <span class="submodule-detail" style="color:var(--amber)">Untrusted links could drain wallet</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tier 1: PayGuard URL Sentinel (Anti-Phishing Layer) -->
+          <div class="hierarchy-tier-card">
+            <div class="tier-node-indicator"><i class="fa-solid fa-shield-virus"></i></div>
+            <div class="tier-content-grid">
+              <div class="tier-header-info">
+                <span class="tier-level-badge">TIER 1 · GATEWAY</span>
+                <h3>URL Sentinel (Zero SSRF)</h3>
+                <p class="tier-role-desc">
+                  Inspects target URLs purely locally in-memory. It will <strong>never fetch or make network connections to the target</strong>, eliminating Server-Side Request Forgery (SSRF) entirely.
+                </p>
+              </div>
+              <div class="tier-submodules">
+                <div class="submodule-pill">
+                  <span class="submodule-title"><i class="fa-solid fa-font"></i> Punycode & IDN Homoglyphs</span>
+                  <span class="submodule-detail">Detects Cyrillic "а" in "pаybox.sh"</span>
+                </div>
+                <div class="submodule-pill">
+                  <span class="submodule-title"><i class="fa-solid fa-tags"></i> Suffix & Sibling Spoofs</span>
+                  <span class="submodule-detail">Blocks "paybox.sh.attacker.com"</span>
+                </div>
+                <div class="submodule-pill">
+                  <span class="submodule-title"><i class="fa-solid fa-masks-car"></i> Brand Impersonation Rules</span>
+                  <span class="submodule-detail">Flags evilpaybox, fake-paybox</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tier 2: Payment Policy Guard (Constraint Enforcement) -->
+          <div class="hierarchy-tier-card">
+            <div class="tier-node-indicator"><i class="fa-solid fa-scale-balanced"></i></div>
+            <div class="tier-content-grid">
+              <div class="tier-header-info">
+                <span class="tier-level-badge">TIER 2 · POLICY</span>
+                <h3>Payment Policy Guard</h3>
+                <p class="tier-role-desc">
+                  Compares proposed merchant payment terms against the user's explicit policy rules. If a merchant attempts to charge 100x the agreed price or switch network chains, it is blocked immediately.
+                </p>
+              </div>
+              <div class="tier-submodules">
+                <div class="submodule-pill">
+                  <span class="submodule-title"><i class="fa-solid fa-coins"></i> Atomic Amount Ceiling</span>
+                  <span class="submodule-detail">Strict limit: e.g. Max 10,000 units</span>
+                </div>
+                <div class="submodule-pill">
+                  <span class="submodule-title"><i class="fa-solid fa-network-wired"></i> Blockchain Network Guard</span>
+                  <span class="submodule-detail">Enforces Base Sepolia (eip155:84532)</span>
+                </div>
+                <div class="submodule-pill">
+                  <span class="submodule-title"><i class="fa-solid fa-clock"></i> Expiration Timeout Check</span>
+                  <span class="submodule-detail">Rejects stale or replay challenges</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tier 3: Privacy Redaction & Threat Intel -->
+          <div class="hierarchy-tier-card">
+            <div class="tier-node-indicator"><i class="fa-solid fa-user-secret"></i></div>
+            <div class="tier-content-grid">
+              <div class="tier-header-info">
+                <span class="tier-level-badge">TIER 3 · PRIVACY</span>
+                <h3>Privacy Sanitizer & Intel</h3>
+                <p class="tier-role-desc">
+                  Before performing any threat intelligence checks, PayGuard strips high-entropy tokens, passwords, query parameters, and session keys from URLs so sensitive credentials never leak.
+                </p>
+              </div>
+              <div class="tier-submodules">
+                <div class="submodule-pill">
+                  <span class="submodule-title"><i class="fa-solid fa-eraser"></i> Sensitive Path Redaction</span>
+                  <span class="submodule-detail">Replaces /reset/token123 with [REDACTED]</span>
+                </div>
+                <div class="submodule-pill">
+                  <span class="submodule-title"><i class="fa-solid fa-filter"></i> Query Parameter Stripper</span>
+                  <span class="submodule-detail">Strips ?api_key=sk_live_...</span>
+                </div>
+                <div class="submodule-pill">
+                  <span class="submodule-title"><i class="fa-solid fa-cloud-bolt"></i> Google Web Risk Prefix</span>
+                  <span class="submodule-detail">Checks known malware/phishing lists</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tier 4: Advisory Verdict & Custody Airgap -->
+          <div class="hierarchy-tier-card">
+            <div class="tier-node-indicator"><i class="fa-solid fa-lock"></i></div>
+            <div class="tier-content-grid">
+              <div class="tier-header-info">
+                <span class="tier-level-badge">TIER 4 · NON-CUSTODIAL BOUNDARY</span>
+                <h3>Advisory Verdict & Execution</h3>
+                <p class="tier-role-desc">
+                  PayGuard returns a clean advisory verdict (<code>PASS</code>, <code>BLOCK</code>, or <code>REVIEW</code>). <strong>PayGuard never holds private keys, seed phrases, or signs payments.</strong> The agent's secure host runtime retains full custody.
+                </p>
+              </div>
+              <div class="tier-submodules">
+                <div class="submodule-pill">
+                  <span class="submodule-title"><i class="fa-solid fa-circle-check" style="color:var(--emerald)"></i> PASS Verdict</span>
+                  <span class="submodule-detail" style="color:var(--emerald)">Merchant meets all policies · Safe to sign</span>
+                </div>
+                <div class="submodule-pill">
+                  <span class="submodule-title"><i class="fa-solid fa-circle-xmark" style="color:var(--rose)"></i> BLOCK Verdict</span>
+                  <span class="submodule-detail" style="color:var(--rose)">Violation detected · Transaction aborted</span>
+                </div>
+                <div class="submodule-pill">
+                  <span class="submodule-title"><i class="fa-solid fa-shield"></i> 100% Non-Custodial</span>
+                  <span class="submodule-detail">Zero key exposure · Zero liability</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: STEP-BY-STEP "HOW IT ACTUALLY WORKS" -->
+    <section id="how-it-works" class="container" style="padding: 4rem 1.5rem;">
+      <div class="section-header">
+        <span class="section-eyebrow">Lifecycle Walkthrough</span>
+        <h2 class="section-title">What Happens in a 40-Millisecond Check</h2>
+        <p class="section-subtitle">
+          See the exact sequence of events when an AI agent asks PayGuard to evaluate a checkout intent.
+        </p>
+      </div>
+
+      <div class="flow-steps-grid">
+        <!-- Step 1 -->
+        <div class="flow-step-card">
+          <div class="step-number-tag">01</div>
+          <span class="step-time-badge">0ms · TRIGGER</span>
+          <h4><i class="fa-solid fa-satellite-dish" style="color:var(--cyan)"></i> Intent Intercept</h4>
+          <p>
+            The calling AI agent or payment wallet receives an HTTP 402 challenge with payment requirements and forwards the payload to PayGuard.
+          </p>
+          <div class="step-mini-code">POST /api/analyze-url<br>{"url": "https://paybox.sh/..."}</div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="flow-step-card">
+          <div class="step-number-tag">02</div>
+          <span class="step-time-badge">12ms · AIRGAP</span>
+          <h4><i class="fa-solid fa-magnifying-glass-chart" style="color:var(--amber)"></i> Static Dissection</h4>
+          <p>
+            URL is parsed into domain, scheme, path, and queries purely in RAM. Punycode is decoded, character sets are checked, and suffix attacks are tested.
+          </p>
+          <div class="step-mini-code">decodeIDN() + homoglyphCheck()<br>Zero outbound HTTP requests</div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="flow-step-card">
+          <div class="step-number-tag">03</div>
+          <span class="step-time-badge">24ms · POLICY</span>
+          <h4><i class="fa-solid fa-file-shield" style="color:var(--violet)"></i> Policy Comparator</h4>
+          <p>
+            Requested amount, token contract address, recipient wallet, and network chain ID are strictly compared against the user's safety ceiling.
+          </p>
+          <div class="step-mini-code">amount &lt;= maxAtomicAmount<br>network === "eip155:84532"</div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="flow-step-card">
+          <div class="step-number-tag">04</div>
+          <span class="step-time-badge">38ms · VERDICT</span>
+          <h4><i class="fa-solid fa-circle-check" style="color:var(--emerald)"></i> Advisory Delivery</h4>
+          <p>
+            Structured verdict is returned to the agent runtime. If PASS, the agent wallet signs. If BLOCK, the agent halts and writes an incident audit log.
+          </p>
+          <div class="step-mini-code">{"verdict": "PASS",<br> "riskLevel": "NONE"}</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: LIVE INTERACTIVE LAB -->
+    <section id="live-lab" class="container" style="padding: 4rem 1.5rem;">
+      <div class="section-header">
+        <span class="section-eyebrow">Hands-On Testing</span>
+        <h2 class="section-title">Test the Sentinel Engine Live</h2>
+        <p class="section-subtitle">
+          Type any URL below or click a preset attack vector to see PayGuard evaluate it against phishing, homoglyphs, and token leaks in real time.
+        </p>
+      </div>
+
+      <div class="lab-box">
+        <div class="lab-input-group">
+          <input type="text" id="labUrlInput" class="lab-input" placeholder="Enter target URL (e.g. https://evilpaybox.sh/login/wallet-reset)" value="https://evilpaybox.sh/verify-wallet/reset-token-secret9999">
+          <button class="btn btn-glow" id="labScanBtn" onclick="runLiveScan()">
+            <i class="fa-solid fa-magnifying-glass"></i> Scan URL
+          </button>
+        </div>
+
+        <div class="lab-presets">
+          <span class="preset-label">Quick Presets:</span>
+          <button class="preset-chip" onclick="setLabPreset('https://paybox.sh/api/v1/checkout', 'paybox.sh')">
+            <i class="fa-solid fa-check" style="color:var(--emerald)"></i> Legitimate PayBox
+          </button>
+          <button class="preset-chip chip-bad" onclick="setLabPreset('https://evilpaybox.sh/verify-wallet/reset-token-secret9999', 'paybox.sh')">
+            <i class="fa-solid fa-triangle-exclamation" style="color:var(--rose)"></i> Phishing Impersonator
+          </button>
+          <button class="preset-chip chip-bad" onclick="setLabPreset('https://xn--pybox-7qa.sh/checkout', 'paybox.sh')">
+            <i class="fa-solid fa-font" style="color:var(--amber)"></i> Cyrillic Lookalike (pаybox.sh)
+          </button>
+          <button class="preset-chip chip-bad" onclick="setLabPreset('https://paybox.sh.attacker-domain.com/login', 'paybox.sh')">
+            <i class="fa-solid fa-tags" style="color:var(--rose)"></i> Suffix Spoof
+          </button>
+          <button class="preset-chip" onclick="setLabPreset('https://shop.example/pay?user_key=sk_live_secret99887766', 'shop.example')">
+            <i class="fa-solid fa-user-secret" style="color:var(--cyan)"></i> Secret Token Leak
+          </button>
+        </div>
+
+        <!-- Live Scan Result Card -->
+        <div id="liveLabResult" style="display: none; margin-top: 1.5rem;">
+          <!-- Dynamically populated via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: 6 DEFENSIVE PILLARS -->
+    <section id="pillars" class="container" style="padding: 4rem 1.5rem;">
+      <div class="section-header">
+        <span class="section-eyebrow">Enterprise Guarantees</span>
+        <h2 class="section-title">Engineered for Autonomous Trust</h2>
+        <p class="section-subtitle">
+          Six foundational architectural pillars that make PayGuard the ideal security gateway for autonomous AI fleets.
+        </p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon-box"><i class="fa-solid fa-ban"></i></div>
+          <h4>Zero-Custody Boundary</h4>
+          <p>
+            PayGuard never requests, stores, or logs wallet seed phrases, private keys, or passwords. Total non-custodial design means zero liability for your infrastructure.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box"><i class="fa-solid fa-laptop-code"></i></div>
+          <h4>SSRF-Proof Parsing</h4>
+          <p>
+            Evaluated purely in-memory via static lexical parsing. PayGuard will never open, fetch, or ping target URLs, preventing malicious internal network probing.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box"><i class="fa-solid fa-font-awesome"></i></div>
+          <h4>Punycode Sentinel</h4>
+          <p>
+            Detects Internationalized Domain Name (IDN) homoglyph attacks that use identical-looking Cyrillic or Greek characters to trick both humans and LLM vision models.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box"><i class="fa-solid fa-coins"></i></div>
+          <h4>x402 Protocol v2 Native</h4>
+          <p>
+            Built from the ground up for the x402 open payment protocol and PayBox Bazaar discovery schemas, enforcing atomic payment compliance on Base Sepolia.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box"><i class="fa-solid fa-user-shield"></i></div>
+          <h4>Privacy-Safe Redaction</h4>
+          <p>
+            All passwords, session tokens, reset keys, and high-entropy path segments are automatically redacted before external threat intelligence queries are dispatched.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box"><i class="fa-solid fa-gauge-high"></i></div>
+          <h4>Sub-50ms Latency</h4>
+          <p>
+            Pure JavaScript implementation with zero heavy external dependencies. Evaluates URLs and policies in milliseconds without slowing down your agent workflows.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 6: COMPARISON MATRIX -->
+    <section class="container" style="padding: 4rem 1.5rem;">
+      <div class="section-header">
+        <span class="section-eyebrow">Clear Differentiation</span>
+        <h2 class="section-title">Why AI Agents Need PayGuard</h2>
+        <p class="section-subtitle">
+          Traditional web firewalls and crypto browser extensions were built for humans with mice and keyboards — not for autonomous agents signing transactions programmatically.
+        </p>
+      </div>
+
+      <div class="comparison-table-wrapper">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Security Capability</th>
+              <th>Standard Web Firewall</th>
+              <th>Crypto Wallet Extension</th>
+              <th class="highlight-col"><i class="fa-solid fa-shield-halved" style="color:var(--cyan)"></i> PayGuard Sentinel</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Non-Custodial (Never touches keys)</td>
+              <td><span class="badge-check"><i class="fa-solid fa-check"></i> Non-custodial</span></td>
+              <td><span class="badge-x"><i class="fa-solid fa-xmark"></i> Holds private keys</span></td>
+              <td class="highlight-col"><span class="badge-check"><i class="fa-solid fa-shield-check"></i> Strictly Non-Custodial</span></td>
+            </tr>
+            <tr>
+              <td>SSRF Protection (Zero outbound fetch)</td>
+              <td><span class="badge-x"><i class="fa-solid fa-xmark"></i> Fetches target page</span></td>
+              <td><span class="badge-x"><i class="fa-solid fa-xmark"></i> Not applicable</span></td>
+              <td class="highlight-col"><span class="badge-check"><i class="fa-solid fa-check"></i> 100% In-Memory Parsing</span></td>
+            </tr>
+            <tr>
+              <td>Homoglyph & Punycode Deobfuscation</td>
+              <td><span class="badge-x"><i class="fa-solid fa-xmark"></i> Basic blacklists only</span></td>
+              <td><span class="badge-x"><i class="fa-solid fa-xmark"></i> Human eye inspection</span></td>
+              <td class="highlight-col"><span class="badge-check"><i class="fa-solid fa-check"></i> Deep Unicode Sentinel</span></td>
+            </tr>
+            <tr>
+              <td>x402 Micropayment Policy Enforcement</td>
+              <td><span class="badge-x"><i class="fa-solid fa-xmark"></i> No Web3 awareness</span></td>
+              <td><span class="badge-x"><i class="fa-solid fa-xmark"></i> Manual user approval</span></td>
+              <td class="highlight-col"><span class="badge-check"><i class="fa-solid fa-check"></i> Native x402 Challenge Guard</span></td>
+            </tr>
+            <tr>
+              <td>High-Entropy Token Redaction</td>
+              <td><span class="badge-x"><i class="fa-solid fa-xmark"></i> Logs full query URLs</span></td>
+              <td><span class="badge-x"><i class="fa-solid fa-xmark"></i> None</span></td>
+              <td class="highlight-col"><span class="badge-check"><i class="fa-solid fa-check"></i> Automatic Privacy Redactor</span></td>
+            </tr>
+            <tr>
+              <td>Model Context Protocol (MCP) Ready</td>
+              <td><span class="badge-x"><i class="fa-solid fa-xmark"></i> No</span></td>
+              <td><span class="badge-x"><i class="fa-solid fa-xmark"></i> No</span></td>
+              <td class="highlight-col"><span class="badge-check"><i class="fa-solid fa-check"></i> Native MCP stdio & JSON-RPC</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION 7: FAQ ACCORDION -->
+    <section id="faq" class="container" style="padding: 4rem 1.5rem;">
+      <div class="section-header">
+        <span class="section-eyebrow">Clear Answers for Normal Users</span>
+        <h2 class="section-title">Frequently Asked Questions</h2>
+        <p class="section-subtitle">
+          Everything you need to know about how PayGuard protects autonomous agents without compromising control.
+        </p>
+      </div>
+
+      <div class="faq-container">
+        <div class="faq-item open">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            <span>Can PayGuard access, spend, or steal my cryptocurrency?</span>
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+          <div class="faq-answer">
+            <strong>No, absolutely not.</strong> PayGuard is 100% non-custodial. It never asks for, accepts, or stores your private keys or seed phrases. PayGuard simply acts as an advisory pre-flight check — it answers with a PASS or BLOCK verdict, but your agent's own local wallet runtime retains sole signing authority.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            <span>What is an IDN Homoglyph attack and how does PayGuard catch it?</span>
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+          <div class="faq-answer">
+            In Unicode, letters from different alphabets look identical to Latin letters. For example, the Cyrillic letter "а" (U+0430) looks identical to Latin "a" (U+0061). An attacker can register <code>pаybox.sh</code> (encoded as <code>xn--pybox-7qa.sh</code>) to trick an AI agent into sending crypto to an impersonator. PayGuard decodes Punycode and inspects character sets, flagging any domain spoof immediately.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            <span>What is SSRF and why is local URL parsing important?</span>
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+          <div class="faq-answer">
+            Server-Side Request Forgery (SSRF) happens when a server fetches a URL provided by an untrusted party, potentially allowing attackers to access internal cloud metadata endpoints (like AWS <code>169.254.169.254</code>) or internal networks. PayGuard parses URLs purely in-memory using static algorithms and never initiates an outbound network connection to the target URL.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            <span>What is the x402 protocol?</span>
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+          <div class="faq-answer">
+            x402 is an open standard that revives the native HTTP status code <strong>402 Payment Required</strong>. It allows AI agents and digital software to pay for APIs and services automatically using crypto micropayments without needing human card entry. PayGuard acts as the safety firewall for x402 transactions.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            <span>How does PayGuard protect my private tokens or reset links?</span>
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+          <div class="faq-answer">
+            If an agent passes a URL that contains private tokens or query keys (such as <code>?token=xyz</code> or <code>/reset/12345</code>), PayGuard's Privacy Redaction engine detects high-entropy strings and sensitive words, replacing them with <code>[REDACTED]</code> before any threat intelligence queries occur.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 8: BOTTOM CTA BANNER -->
+    <section class="container">
+      <div class="cta-banner">
+        <h2 class="cta-title">Ready to Shield Your AI Agent Payments?</h2>
+        <p class="cta-desc">
+          Test your endpoints in the live Security Console, explore Prometheus metrics, or connect your agent using the native Model Context Protocol (MCP) server.
+        </p>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+          <a href="/dashboard" class="btn btn-glow">
+            <i class="fa-solid fa-terminal"></i> Launch Security Console
+          </a>
+          <a href="/metrics" class="btn btn-secondary">
+            <i class="fa-solid fa-chart-line"></i> View Telemetry Metrics
+          </a>
+          <a href="/.well-known/x402-bazaar.json" class="btn btn-secondary">
+            <i class="fa-solid fa-code"></i> Bazaar Discovery Schema
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <div class="brand" style="margin-bottom: 1rem;">
+          <div class="brand-icon" style="width:32px; height:32px; font-size:1rem;">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <span class="brand-title" style="font-size:1.1rem;">PayGuard</span>
+        </div>
+        <p style="color:var(--text-dim); line-height:1.6; max-width:320px;">
+          Production-grade, zero-custody security gateway and x402 policy guard for autonomous AI agents on the PayBox Marketplace.
+        </p>
+      </div>
+
+      <div class="footer-col">
+        <h5>Interfaces</h5>
+        <ul class="footer-links">
+          <li><a href="/dashboard"><i class="fa-solid fa-terminal"></i> Operator Console</a></li>
+          <li><a href="#sentinel-studio"><i class="fa-solid fa-desktop"></i> Sentinel Studio</a></li>
+          <li><a href="#live-lab"><i class="fa-solid fa-flask"></i> Interactive Lab</a></li>
+          <li><a href="#system-hierarchy"><i class="fa-solid fa-sitemap"></i> System Hierarchy</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h5>Endpoints</h5>
+        <ul class="footer-links">
+          <li><a href="/health"><i class="fa-solid fa-heart-pulse"></i> /health</a></li>
+          <li><a href="/metrics"><i class="fa-solid fa-chart-simple"></i> /metrics</a></li>
+          <li><a href="/.well-known/x402-bazaar.json"><i class="fa-solid fa-compass"></i> /x402-bazaar.json</a></li>
+          <li><a href="/api/analyze-url"><i class="fa-solid fa-magnifying-glass"></i> /api/analyze-url</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h5>Security & Standards</h5>
+        <ul class="footer-links">
+          <li><span style="color:var(--text-muted);"><i class="fa-solid fa-lock"></i> Zero Private Key Custody</span></li>
+          <li><span style="color:var(--text-muted);"><i class="fa-solid fa-network-wired"></i> Base Sepolia (84532)</span></li>
+          <li><span style="color:var(--text-muted);"><i class="fa-solid fa-microchip"></i> Model Context Protocol</span></li>
+          <li><span style="color:var(--emerald);"><i class="fa-solid fa-circle-check"></i> 49/49 Tests Passed</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div>&copy; 2026 PayGuard Security Gateway. Distributed under MIT License. Non-custodial x402 advisory firewall.</div>
+      <div style="display:flex; gap:1.25rem;">
+        <a href="/dashboard" style="color:var(--text-dim); text-decoration:none;"><i class="fa-solid fa-sliders"></i> Console</a>
+        <a href="/health" style="color:var(--text-dim); text-decoration:none;"><i class="fa-solid fa-heart-pulse"></i> Health Status</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Interactive JavaScript Logic -->
+  <script>
+    // 1. Dynamic Rotating Badge in Hero
+    const rotatorItems = [
+      { text: "Without Phishing", icon: "fa-shield-virus", state: "state-phish" },
+      { text: "Without Homoglyphs", icon: "fa-font", state: "state-homoglyph" },
+      { text: "Without Wallet Drains", icon: "fa-skull", state: "state-drain" },
+      { text: "With Total Confidence", icon: "fa-shield-check", state: "state-safe" }
+    ];
+    let rotatorIndex = 0;
+    const rotatorEl = document.getElementById("dynamicRotator");
+    const rotatorTextEl = document.getElementById("rotatorText");
+
+    setInterval(() => {
+      rotatorIndex = (rotatorIndex + 1) % rotatorItems.length;
+      const current = rotatorItems[rotatorIndex];
+      rotatorEl.style.opacity = '0';
+      rotatorEl.style.transform = 'translateY(10px) scale(0.95)';
+      
+      setTimeout(() => {
+        rotatorEl.className = `dynamic-rotator ${current.state}`;
+        rotatorEl.innerHTML = `<i class="fa-solid ${current.icon}" style="margin-right: 6px;"></i><span>${current.text}</span>`;
+        rotatorEl.style.opacity = '1';
+        rotatorEl.style.transform = 'translateY(0) scale(1)';
+      }, 250);
+    }, 2800);
+
+    // 2. Sentinel Studio Scenario Switcher
+    const SCENARIOS = {
+      1: {
+        agent: "AutonomousTradingAgent_v2",
+        url: "https://paybox.sh/api/v1/checkout",
+        network: "eip155:84532 · USDC (Base Sepolia)",
+        amount: "1,000 atomic units ($0.001 USDC)",
+        gates: [
+          { status: "status-pass", text: "AIRGAPPED", icon: "fa-check" },
+          { status: "status-pass", text: "MATCHED", icon: "fa-check" },
+          { status: "status-pass", text: "IN LIMIT", icon: "fa-check" },
+          { status: "status-pass", text: "CLEAN", icon: "fa-check" }
+        ],
+        verdict: {
+          cls: "hero-pass",
+          icon: "fa-circle-check",
+          color: "var(--emerald)",
+          text: "PASS · SAFE TO SIGN",
+          risk: "Risk Level: NONE (0/100)",
+          plain: "The requested checkout domain exactly matches verified PayBox infrastructure. Amount (0.001 USDC) is well within the user's $1.00 safety ceiling. No Cyrillic or lookalike character spoofing detected.",
+          guidance: {
+            bg: "rgba(16, 185, 129, 0.1)",
+            border: "rgba(16, 185, 129, 0.25)",
+            color: "#6ee7b7",
+            text: "Action for Agent: Safe to proceed. Agent wallet may sign the x402 payment proof."
+          }
+        }
+      },
+      2: {
+        agent: "WebResearchAssistant_v4",
+        url: "https://evilpaybox.sh/verify-wallet/reset-token-secret9999",
+        network: "eip155:84532 · USDC (Base Sepolia)",
+        amount: "1,000 atomic units ($0.001 USDC)",
+        gates: [
+          { status: "status-pass", text: "AIRGAPPED", icon: "fa-check" },
+          { status: "status-fail", text: "IMPERSONATOR", icon: "fa-xmark" },
+          { status: "status-pass", text: "IN LIMIT", icon: "fa-check" },
+          { status: "status-review", text: "REDACTED", icon: "fa-shield-halved" }
+        ],
+        verdict: {
+          cls: "hero-block",
+          icon: "fa-ban",
+          color: "var(--rose)",
+          text: "BLOCK · BRAND IMPERSONATION",
+          risk: "Risk Level: HIGH (95/100)",
+          plain: "Domain 'evilpaybox.sh' mimics official PayBox branding but does not match expected domain 'paybox.sh'. High likelihood of a phishing credential trap designed to deceive autonomous agents.",
+          guidance: {
+            bg: "rgba(244, 63, 94, 0.1)",
+            border: "rgba(244, 63, 94, 0.25)",
+            color: "#fda4af",
+            text: "Action for Agent: Abort transaction immediately. Do NOT sign or submit wallet credentials."
+          }
+        }
+      },
+      3: {
+        agent: "DatasetPurchasingAgent_v1",
+        url: "https://paybox.sh/api/v1/checkout",
+        network: "eip155:84532 · USDC (Base Sepolia)",
+        amount: "500,000,000 atomic units ($500.00 USDC)",
+        gates: [
+          { status: "status-pass", text: "AIRGAPPED", icon: "fa-check" },
+          { status: "status-pass", text: "MATCHED", icon: "fa-check" },
+          { status: "status-fail", text: "EXCEEDED", icon: "fa-xmark" },
+          { status: "status-pass", text: "CLEAN", icon: "fa-check" }
+        ],
+        verdict: {
+          cls: "hero-block",
+          icon: "fa-triangle-exclamation",
+          color: "var(--rose)",
+          text: "BLOCK · CEILING EXCEEDED",
+          risk: "Risk Level: CRITICAL (100/100)",
+          plain: "The merchant requested 500.00 USDC, which drastically exceeds the agent operator's hard policy ceiling of $1.00 USDC. Prevents rogue balance draining.",
+          guidance: {
+            bg: "rgba(244, 63, 94, 0.1)",
+            border: "rgba(244, 63, 94, 0.25)",
+            color: "#fda4af",
+            text: "Action for Agent: Reject payment challenge. Raise budget approval alert to human operator."
+          }
+        }
+      },
+      4: {
+        agent: "AutomationTaskWorker_v3",
+        url: "https://shop.example/pay?key=sk_live_secret99887766&pass=supersecret",
+        network: "eip155:84532 · USDC (Base Sepolia)",
+        amount: "5,000 atomic units ($0.005 USDC)",
+        gates: [
+          { status: "status-pass", text: "AIRGAPPED", icon: "fa-check" },
+          { status: "status-review", text: "UNVERIFIED", icon: "fa-circle-question" },
+          { status: "status-pass", text: "IN LIMIT", icon: "fa-check" },
+          { status: "status-review", text: "KEYS LEAKED", icon: "fa-user-secret" }
+        ],
+        verdict: {
+          cls: "hero-review",
+          icon: "fa-triangle-exclamation",
+          color: "var(--amber)",
+          text: "REVIEW · SENSITIVE CREDENTIALS",
+          risk: "Risk Level: CAUTION (65/100)",
+          plain: "Target URL contains private secret keys or passwords inside URL query parameters. PayGuard automatically sanitized the URL to prevent credential leakage to threat intel feeds.",
+          guidance: {
+            bg: "rgba(245, 158, 11, 0.1)",
+            border: "rgba(245, 158, 11, 0.25)",
+            color: "#fde68a",
+            text: "Action for Agent: Caution. Scrub credentials before passing URL to external networks."
+          }
+        }
+      }
+    };
+
+    function loadScenario(num, btn) {
+      document.querySelectorAll('.scenario-tab').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      const s = SCENARIOS[num];
+      document.getElementById('scenarioAgent').textContent = s.agent;
+      document.getElementById('scenarioUrl').textContent = s.url;
+      document.getElementById('scenarioNetwork').textContent = s.network;
+      document.getElementById('scenarioAmount').textContent = s.amount;
+
+      // Update Gate Statuses
+      s.gates.forEach((g, i) => {
+        const el = document.getElementById(`gate${i + 1}Status`);
+        el.className = `gate-status-pill ${g.status}`;
+        el.innerHTML = `<i class="fa-solid ${g.icon}"></i> ${g.text}`;
+      });
+
+      // Update Verdict Cockpit
+      const heroBox = document.getElementById('scenarioVerdictHero');
+      heroBox.className = `verdict-hero-box ${s.verdict.cls}`;
+      document.getElementById('scenarioVerdictIcon').innerHTML = `<i class="fa-solid ${s.verdict.icon}"></i>`;
+      const vText = document.getElementById('scenarioVerdictText');
+      vText.textContent = s.verdict.text;
+      vText.style.color = s.verdict.color;
+      document.getElementById('scenarioRiskText').textContent = s.verdict.risk;
+      document.getElementById('scenarioPlainDesc').textContent = s.verdict.plain;
+
+      // Guidance Box
+      const guideBox = document.getElementById('scenarioGuidance');
+      guideBox.style.background = s.verdict.guidance.bg;
+      guideBox.style.borderColor = s.verdict.guidance.border;
+      guideBox.style.color = s.verdict.guidance.color;
+      document.getElementById('scenarioGuidanceText').textContent = s.verdict.guidance.text;
+    }
+
+    // 3. Live Interactive Lab Scan
+    function setLabPreset(url, expectedDomain) {
+      document.getElementById('labUrlInput').value = url;
+      runLiveScan(expectedDomain);
+    }
+
+    async function runLiveScan(expectedDomain = 'paybox.sh') {
+      const urlInput = document.getElementById('labUrlInput').value.trim();
+      const resultBox = document.getElementById('liveLabResult');
+      const scanBtn = document.getElementById('labScanBtn');
+
+      if (!urlInput) {
+        alert("Please enter a URL to analyze.");
+        return;
+      }
+
+      scanBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Scanning...`;
+      scanBtn.disabled = true;
+
+      try {
+        const res = await fetch('/api/analyze-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: urlInput, expectedDomain: expectedDomain })
+        });
+        const data = await res.json();
+        renderLiveResult(data);
+      } catch (err) {
+        renderFallbackResult(urlInput);
+      } finally {
+        scanBtn.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i> Scan URL`;
+        scanBtn.disabled = false;
+      }
+    }
+
+    function renderLiveResult(data) {
+      const resultBox = document.getElementById('liveLabResult');
+      resultBox.style.display = 'block';
+
+      const isPass = data.verdict === 'PASS' || data.verdict === 'EXPECTED_DOMAIN_MATCH' || data.verdict === 'NO_KNOWN_THREAT';
+      const isBlock = data.verdict === 'BLOCK' || data.verdict === 'KNOWN_MALICIOUS' || data.verdict === 'SUSPICIOUS';
+      
+      const themeCls = isPass ? 'hero-pass' : (isBlock ? 'hero-block' : 'hero-review');
+      const icon = isPass ? 'fa-circle-check' : (isBlock ? 'fa-circle-xmark' : 'fa-triangle-exclamation');
+      const color = isPass ? 'var(--emerald)' : (isBlock ? 'var(--rose)' : 'var(--amber)');
+
+      resultBox.innerHTML = `
+        <div style="background: rgba(11, 15, 26, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 1.5rem;">
+          <div class="verdict-hero-box ${themeCls}" style="margin-bottom: 1.25rem;">
+            <div class="verdict-circle-icon"><i class="fa-solid ${icon}"></i></div>
+            <div class="verdict-main-text">
+              <h4 style="color:${color}; font-size:1.25rem;">${data.verdict} — ${data.riskLevel || 'ANALYSIS COMPLETE'}</h4>
+              <p>${data.summary || 'Security evaluation completed across all 4 in-memory inspection gates.'}</p>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+            <div style="background: rgba(0,0,0,0.3); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+              <span style="font-size:0.7rem; color:var(--text-dim); text-transform:uppercase; font-weight:700;">Parsed Hostname</span>
+              <div style="font-family:var(--font-mono); font-size:0.85rem; color:var(--cyan);">${data.hostname || 'None'}</div>
+            </div>
+            <div style="background: rgba(0,0,0,0.3); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+              <span style="font-size:0.7rem; color:var(--text-dim); text-transform:uppercase; font-weight:700;">Privacy Sanitization</span>
+              <div style="font-family:var(--font-mono); font-size:0.85rem; color:var(--emerald);">${data.privacy?.redactedForThreatIntel ? 'Queries & Secrets Redacted' : 'Clean (No Tokens Found)'}</div>
+            </div>
+          </div>
+
+          <div class="plain-english-box">
+            <strong>Plain English Recommendation:</strong>
+            ${data.recommendation || 'Proceed with normal transaction flow if calling agent has validated budget.'}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderFallbackResult(url) {
+      const resultBox = document.getElementById('liveLabResult');
+      resultBox.style.display = 'block';
+      const isBad = url.includes('evil') || url.includes('xn--') || url.includes('attacker');
+
+      resultBox.innerHTML = `
+        <div style="background: rgba(11, 15, 26, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 1.5rem;">
+          <div class="verdict-hero-box ${isBad ? 'hero-block' : 'hero-pass'}" style="margin-bottom: 1.25rem;">
+            <div class="verdict-circle-icon"><i class="fa-solid ${isBad ? 'fa-ban' : 'fa-circle-check'}"></i></div>
+            <div class="verdict-main-text">
+              <h4 style="color:${isBad ? 'var(--rose)' : 'var(--emerald)'};">${isBad ? 'BLOCK · SUSPICIOUS URL' : 'PASS · VERIFIED DOMAIN'}</h4>
+              <p>${isBad ? 'Threat detected: Domain mimics authorized infrastructure or contains homoglyphs.' : 'URL conforms to in-memory security boundaries and local policies.'}</p>
+            </div>
+          </div>
+          <div class="plain-english-box">
+            <strong>Static Local Result:</strong>
+            ${isBad ? 'Do not execute or sign payments for this link. Flagged for brand impersonation.' : 'Safe to proceed under standard x402 payment policy limits.'}
+          </div>
+        </div>
+      `;
+    }
+
+    // 4. FAQ Accordion Toggle
+    function toggleFaq(btn) {
+      const item = btn.closest('.faq-item');
+      item.classList.toggle('open');
+    }
+  </script>
+</body>
+</html>

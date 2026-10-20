@@ -23,6 +23,24 @@ function loadDashboardHtml() {
 }
 let cachedDashboardHtml = loadDashboardHtml();
 
+function loadLandingHtml() {
+  const candidates = [
+    new URL("./public/landing.html", import.meta.url),
+    new URL("../public/landing.html", import.meta.url),
+    path.join(process.cwd(), "public", "landing.html"),
+    path.join(process.cwd(), "landing.html")
+  ];
+  for (const candidate of candidates) {
+    try {
+      if (existsSync(candidate)) {
+        return readFileSync(candidate, "utf8");
+      }
+    } catch {}
+  }
+  return null;
+}
+let cachedLandingHtml = loadLandingHtml();
+
 const PORT = Number.parseInt(process.env.PORT || "8080", 10);
 const HOST = process.env.HOST;
 const MAX_BODY_BYTES = 64 * 1024;
@@ -218,12 +236,29 @@ async function requestHandler(req, res) {
 
     const isBrowserRequest = (req.headers["accept"] || "").includes("text/html");
 
-    if (req.method === "GET" && (parsed.pathname === "/dashboard" || ((parsed.pathname === "/" || parsed.pathname === "") && isBrowserRequest))) {
+    // Interactive Dashboard Operator Console
+    if (req.method === "GET" && parsed.pathname === "/dashboard") {
       statusCode = 200;
       if (!cachedDashboardHtml) {
         cachedDashboardHtml = loadDashboardHtml();
       }
-      const responseHtml = cachedDashboardHtml || "<!DOCTYPE html><html><head><title>PayGuard</title></head><body><h1>PayGuard Dashboard</h1></body></html>";
+      const responseHtml = cachedDashboardHtml || "<!DOCTYPE html><html><head><title>PayGuard Dashboard</title></head><body><h1>PayGuard Dashboard</h1></body></html>";
+      res.writeHead(statusCode, {
+        "content-type": "text/html; charset=utf-8",
+        "content-length": Buffer.byteLength(responseHtml),
+        "cache-control": "no-cache",
+        "access-control-allow-origin": "*"
+      });
+      return res.end(responseHtml);
+    }
+
+    // High-Impact Landing Page (explains hierarchy & inner workings)
+    if (req.method === "GET" && (parsed.pathname === "/landing" || ((parsed.pathname === "/" || parsed.pathname === "") && isBrowserRequest))) {
+      statusCode = 200;
+      if (!cachedLandingHtml) {
+        cachedLandingHtml = loadLandingHtml();
+      }
+      const responseHtml = cachedLandingHtml || cachedDashboardHtml || "<!DOCTYPE html><html><head><title>PayGuard</title></head><body><h1>PayGuard</h1></body></html>";
       res.writeHead(statusCode, {
         "content-type": "text/html; charset=utf-8",
         "content-length": Buffer.byteLength(responseHtml),
@@ -240,6 +275,7 @@ async function requestHandler(req, res) {
         version: "0.1.0",
         description: "PayGuard security-focused x402 and URL Sentinel service for AI agents",
         endpoints: {
+          landing: "/",
           dashboard: "/dashboard",
           health: "/health",
           analyzeUrl: "/api/analyze-url",
