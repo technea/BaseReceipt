@@ -4,28 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PayGuard — Autonomous AI Agent Security Gateway & x402 Policy Guard</title>
-  <meta name="description" content="Explain the hierarchy and inner workings of PayGuard: a zero-custody, SSRF-proof security firewall that protects AI agents from phishing, lookalike domains, and rogue payment drains.">
+  <meta name="description" content="Next-gen zero-custody, SSRF-proof security firewall for AI agents. Visual hierarchy, live packet inspection simulator, and real-time x402 payment policy enforcement.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     :root {
-      --bg-dark: #070a13;
-      --bg-card: rgba(15, 23, 42, 0.72);
-      --bg-card-hover: rgba(24, 34, 58, 0.85);
+      --bg-dark: #060911;
+      --bg-surface: #0a0f1d;
+      --bg-card: rgba(13, 20, 38, 0.75);
+      --bg-card-hover: rgba(20, 31, 58, 0.9);
       --border-subtle: rgba(255, 255, 255, 0.08);
-      --border-focus: rgba(0, 240, 255, 0.4);
+      --border-highlight: rgba(0, 240, 255, 0.35);
       --cyan: #00f0ff;
-      --cyan-glow: rgba(0, 240, 255, 0.25);
+      --cyan-glow: rgba(0, 240, 255, 0.3);
       --emerald: #10b981;
-      --emerald-glow: rgba(16, 185, 129, 0.25);
+      --emerald-glow: rgba(16, 185, 129, 0.3);
       --violet: #818cf8;
-      --violet-glow: rgba(129, 140, 248, 0.25);
+      --violet-glow: rgba(129, 140, 248, 0.3);
       --amber: #f59e0b;
-      --amber-glow: rgba(245, 158, 11, 0.25);
+      --amber-glow: rgba(245, 158, 11, 0.3);
       --rose: #f43f5e;
-      --rose-glow: rgba(244, 63, 94, 0.25);
+      --rose-glow: rgba(244, 63, 94, 0.3);
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --text-dim: #64748b;
@@ -34,31 +35,35 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    html {
-      scroll-behavior: smooth;
-    }
+    html { scroll-behavior: smooth; }
 
     body {
       background-color: var(--bg-dark);
-      background-image: 
-        radial-gradient(circle at 20% 10%, rgba(99, 102, 241, 0.12) 0%, transparent 45%),
-        radial-gradient(circle at 80% 15%, rgba(0, 240, 255, 0.1) 0%, transparent 40%),
-        radial-gradient(circle at 50% 60%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
-        radial-gradient(circle at 20% 90%, rgba(244, 63, 94, 0.08) 0%, transparent 45%);
-      background-attachment: fixed;
       color: var(--text-main);
       font-family: var(--font-sans);
       min-height: 100vh;
       overflow-x: hidden;
       line-height: 1.5;
+      position: relative;
     }
 
-    /* Modern Scrollbar */
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    /* Ambient Canvas Background */
+    #meshCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.45;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
     ::-webkit-scrollbar-track { background: var(--bg-dark); }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(0,240,255,0.4); }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--cyan); }
 
     /* Sticky Header */
     header.vidyst-header {
@@ -66,7 +71,8 @@
       top: 0;
       z-index: 100;
       backdrop-filter: blur(20px);
-      background: rgba(7, 10, 19, 0.82);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(6, 9, 17, 0.85);
       border-bottom: 1px solid var(--border-subtle);
       transition: all 0.3s ease;
     }
@@ -74,11 +80,13 @@
     .nav-container {
       max-width: 1280px;
       margin: 0 auto;
-      padding: 0.875rem 1.5rem;
+      padding: 0.85rem 1.75rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 1.5rem;
+      position: relative;
+      z-index: 2;
     }
 
     .brand {
@@ -89,59 +97,59 @@
       color: inherit;
     }
 
-    .brand-icon {
-      width: 38px;
-      height: 38px;
+    .brand-icon-box {
+      width: 40px;
+      height: 40px;
       border-radius: 10px;
-      background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(99, 102, 241, 0.3));
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.25) 0%, rgba(99, 102, 241, 0.35) 100%);
       border: 1px solid var(--cyan);
-      box-shadow: 0 0 16px var(--cyan-glow);
+      box-shadow: 0 0 16px var(--cyan-glow), inset 0 1px 0 rgba(255,255,255,0.3);
       display: flex;
       align-items: center;
       justify-content: center;
       color: var(--cyan);
-      font-size: 1.15rem;
-      transition: transform 0.25s ease;
+      font-size: 1.2rem;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
-    .brand:hover .brand-icon {
-      transform: scale(1.06);
-    }
-
-    .brand-text {
-      display: flex;
-      flex-direction: column;
+    .brand:hover .brand-icon-box {
+      transform: scale(1.08) rotate(-4deg);
     }
 
     .brand-title {
       font-weight: 800;
       font-size: 1.25rem;
       letter-spacing: -0.03em;
-      background: linear-gradient(135deg, #ffffff 40%, var(--cyan) 100%);
+      background: linear-gradient(135deg, #ffffff 30%, var(--cyan) 100%);
+      background-clip: text;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       display: flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.45rem;
     }
 
     .brand-pill {
       font-size: 0.65rem;
       font-weight: 700;
-      padding: 0.15rem 0.45rem;
+      padding: 0.15rem 0.5rem;
       border-radius: 9999px;
-      background: rgba(0, 240, 255, 0.12);
+      background: rgba(0, 240, 255, 0.1);
       color: var(--cyan);
       border: 1px solid rgba(0, 240, 255, 0.25);
-      letter-spacing: 0.04em;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
     }
 
     .nav-links {
       display: flex;
       align-items: center;
-      gap: 1.75rem;
+      gap: 1.6rem;
       list-style: none;
+    }
+
+    @media (max-width: 960px) {
+      .nav-links { display: none; }
     }
 
     .nav-link {
@@ -149,14 +157,15 @@
       text-decoration: none;
       font-size: 0.875rem;
       font-weight: 500;
-      transition: color 0.2s ease;
+      transition: all 0.2s ease;
       display: flex;
       align-items: center;
       gap: 0.4rem;
     }
 
     .nav-link:hover {
-      color: var(--text-main);
+      color: #ffffff;
+      transform: translateY(-1px);
     }
 
     .nav-actions {
@@ -177,58 +186,63 @@
       border-radius: 9999px;
       text-decoration: none;
       cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       border: 1px solid transparent;
       white-space: nowrap;
+      position: relative;
+      overflow: hidden;
     }
 
     .btn-primary {
       background: #ffffff;
-      color: #070a13;
+      color: #060911;
       border-color: #ffffff;
-      box-shadow: 0 4px 14px rgba(255, 255, 255, 0.15);
+      box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
     }
 
     .btn-primary:hover {
       background: #f1f5f9;
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(0, 240, 255, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(0, 240, 255, 0.35);
     }
 
     .btn-glow {
       background: linear-gradient(135deg, #00f0ff 0%, #3b82f6 100%);
-      color: #070a13;
+      color: #060911;
       font-weight: 700;
-      box-shadow: 0 0 20px rgba(0, 240, 255, 0.35);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
     }
 
     .btn-glow:hover {
       transform: translateY(-2px);
-      box-shadow: 0 0 28px rgba(0, 240, 255, 0.55);
+      box-shadow: 0 0 32px rgba(0, 240, 255, 0.65);
     }
 
     .btn-secondary {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.04);
       color: var(--text-main);
       border-color: var(--border-subtle);
+      backdrop-filter: blur(10px);
     }
 
     .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.08);
       border-color: rgba(255, 255, 255, 0.2);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
     }
 
-    /* Layout Sections */
+    /* Container */
     .container {
       max-width: 1240px;
       margin: 0 auto;
       padding: 0 1.5rem;
+      position: relative;
+      z-index: 1;
     }
 
-    /* Hero Section */
+    /* HERO SECTION */
     .hero-section {
-      padding: 4.5rem 0 2.5rem;
+      padding: 4.5rem 0 3rem;
       text-align: center;
       position: relative;
     }
@@ -236,16 +250,17 @@
     .pill-badge {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.35rem 0.9rem;
+      gap: 0.6rem;
+      padding: 0.4rem 1rem;
       border-radius: 9999px;
       background: rgba(0, 240, 255, 0.08);
-      border: 1px solid rgba(0, 240, 255, 0.22);
+      border: 1px solid rgba(0, 240, 255, 0.25);
       color: var(--cyan);
       font-size: 0.8rem;
       font-weight: 600;
       margin-bottom: 1.5rem;
-      animation: pulseGlow 3s infinite ease-in-out;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+      animation: pulseBorder 3s infinite alternate;
     }
 
     .pill-dot {
@@ -254,72 +269,70 @@
       border-radius: 50%;
       background: var(--cyan);
       box-shadow: 0 0 8px var(--cyan);
+      animation: liveBlink 1.5s infinite;
     }
 
     .hero-title {
-      font-size: clamp(2.5rem, 5.5vw, 4.5rem);
+      font-size: clamp(2.6rem, 5.8vw, 4.75rem);
       font-weight: 800;
       line-height: 1.08;
       letter-spacing: -0.04em;
       margin-bottom: 1.5rem;
-      max-width: 980px;
+      max-width: 1020px;
       margin-left: auto;
       margin-right: auto;
     }
 
-    .hero-title span.gradient-text {
+    .gradient-text {
       background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+      background-clip: text;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
 
-    /* Dynamic Rotating Badge (Vidyst signature style) */
+    /* Vidyst Rotator Badge */
     .dynamic-rotator {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 0.15em 0.4em;
-      border-radius: 0.3em;
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 0.15em 0.45em;
+      border-radius: 0.35em;
+      border: 1px solid rgba(255, 255, 255, 0.15);
       margin: 0 0.15em;
       font-weight: 800;
-      transition: all 0.4s cubic-bezier(0.34, 1.3, 0.64, 1);
+      transition: all 0.45s cubic-bezier(0.34, 1.4, 0.64, 1);
       position: relative;
-      overflow: hidden;
     }
 
     .dynamic-rotator.state-phish {
       background: rgba(244, 63, 94, 0.15);
-      border-color: rgba(244, 63, 94, 0.4);
+      border-color: rgba(244, 63, 94, 0.45);
       color: #fda4af;
-      box-shadow: 0 0 20px rgba(244, 63, 94, 0.2);
+      box-shadow: 0 0 25px rgba(244, 63, 94, 0.25);
     }
-
     .dynamic-rotator.state-homoglyph {
       background: rgba(245, 158, 11, 0.15);
-      border-color: rgba(245, 158, 11, 0.4);
+      border-color: rgba(245, 158, 11, 0.45);
       color: #fde68a;
-      box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.25);
     }
-
     .dynamic-rotator.state-drain {
       background: rgba(129, 140, 248, 0.15);
-      border-color: rgba(129, 140, 248, 0.4);
+      border-color: rgba(129, 140, 248, 0.45);
       color: #c7d2fe;
-      box-shadow: 0 0 20px rgba(129, 140, 248, 0.2);
+      box-shadow: 0 0 25px rgba(129, 140, 248, 0.25);
     }
-
     .dynamic-rotator.state-safe {
       background: rgba(16, 185, 129, 0.15);
-      border-color: rgba(16, 185, 129, 0.4);
+      border-color: rgba(16, 185, 129, 0.45);
       color: #6ee7b7;
-      box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.25);
     }
 
     .hero-desc {
       font-size: clamp(1.05rem, 1.8vw, 1.25rem);
       color: var(--text-muted);
-      max-width: 680px;
+      max-width: 720px;
       margin: 0 auto 2.25rem;
       line-height: 1.6;
       font-weight: 400;
@@ -334,16 +347,16 @@
       margin-bottom: 2.5rem;
     }
 
-    /* Trust Pill Badges */
+    /* Trust Strip */
     .trust-strip {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 1.5rem;
       flex-wrap: wrap;
-      padding-top: 1.25rem;
+      padding-top: 1.5rem;
       border-top: 1px solid rgba(255, 255, 255, 0.05);
-      max-width: 880px;
+      max-width: 900px;
       margin: 0 auto;
     }
 
@@ -355,42 +368,493 @@
       font-size: 0.8rem;
       font-weight: 500;
     }
+    .trust-item i { color: var(--emerald); font-size: 0.75rem; }
 
-    .trust-item i {
-      color: var(--emerald);
-      font-size: 0.75rem;
+    /* ========================================================= */
+    /* NEW: ANIMATED EXPLANATORY VISUALIZATION SIMULATOR         */
+    /* ========================================================= */
+    #visual-simulation {
+      padding: 4.5rem 0 3.5rem;
     }
 
-    /* THE SENTINEL STUDIO COCKPIT (Vidyst Studio Mockup equivalent) */
+    .simulator-wrapper {
+      background: linear-gradient(180deg, rgba(16, 24, 48, 0.85) 0%, rgba(8, 12, 24, 0.95) 100%);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      border-radius: 24px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75), 0 0 40px rgba(0, 240, 255, 0.08);
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Simulator Top Control Bar */
+    .sim-control-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 2rem;
+    }
+
+    .sim-playback-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sim-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .sim-btn:hover {
+      background: rgba(0, 240, 255, 0.15);
+      border-color: rgba(0, 240, 255, 0.35);
+      color: var(--cyan);
+    }
+
+    .sim-btn.active {
+      background: var(--cyan);
+      color: #060911;
+      border-color: var(--cyan);
+      box-shadow: 0 0 15px var(--cyan-glow);
+    }
+
+    .sim-mode-pills {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .sim-mode-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sim-mode-btn.active {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .sim-mode-btn.active.mode-safe {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--emerald);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+
+    .sim-mode-btn.active.mode-attack {
+      background: rgba(244, 63, 94, 0.2);
+      color: var(--rose);
+      border: 1px solid rgba(244, 63, 94, 0.35);
+    }
+
+    /* The Animated Stage Track */
+    .sim-stage-track {
+      position: relative;
+      margin: 2.5rem 0 3.5rem;
+      padding: 0 20px;
+    }
+
+    /* Glowing Bus Track Line */
+    .track-line {
+      position: absolute;
+      top: 40px;
+      left: 60px;
+      right: 60px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 3px;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .track-progress-fill {
+      height: 100%;
+      width: 20%;
+      background: linear-gradient(90deg, var(--cyan) 0%, var(--violet) 50%, var(--emerald) 100%);
+      box-shadow: 0 0 16px var(--cyan);
+      transition: width 0.7s cubic-bezier(0.34, 1.3, 0.64, 1);
+    }
+
+    /* 5 Stations along the track */
+    .track-stations {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      z-index: 2;
+    }
+
+    .sim-station {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      width: 140px;
+      text-align: center;
+      transition: transform 0.2s ease;
+    }
+
+    .sim-station:hover {
+      transform: translateY(-2px);
+    }
+
+    .station-node {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: #080d1a;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      color: var(--text-dim);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      position: relative;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .station-node::after {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      border: 2px dashed transparent;
+      transition: all 0.4s ease;
+    }
+
+    .sim-station.active .station-node {
+      border-color: var(--cyan);
+      color: var(--cyan);
+      box-shadow: 0 0 30px var(--cyan-glow), inset 0 0 15px rgba(0, 240, 255, 0.2);
+      transform: scale(1.1);
+    }
+
+    .sim-station.active .station-node::after {
+      border-color: var(--cyan);
+      animation: rotateRing 6s linear infinite;
+    }
+
+    .sim-station.passed .station-node {
+      border-color: var(--emerald);
+      color: var(--emerald);
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+    }
+
+    .sim-station.blocked .station-node {
+      border-color: var(--rose) !important;
+      color: var(--rose) !important;
+      box-shadow: 0 0 30px rgba(244, 63, 94, 0.4) !important;
+      animation: alertJitter 0.3s ease-in-out infinite alternate;
+    }
+
+    @keyframes rotateRing {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes alertJitter {
+      0% { transform: scale(1.1) rotate(-2deg); }
+      100% { transform: scale(1.1) rotate(2deg); }
+    }
+
+    .station-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-top: 14px;
+      transition: color 0.2s ease;
+    }
+
+    .sim-station.active .station-title {
+      color: var(--cyan);
+    }
+
+    .station-step-num {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    /* Explanatory Visualization Split Screen (Live Packet X-Ray & Deep Explanation) */
+    .sim-detail-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 24px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 24px;
+      position: relative;
+      min-height: 280px;
+    }
+
+    @media (max-width: 900px) {
+      .sim-detail-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Left: Live Packet X-Ray Dissector Visual */
+    .packet-xray-view {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background: rgba(10, 15, 28, 0.85);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .xray-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .xray-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .xray-stream-badge {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(0, 240, 255, 0.1);
+      color: var(--cyan);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+    }
+
+    /* Interactive Visual Scanner Box */
+    .xray-chamber {
+      background: #060911;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .chamber-laser {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--cyan);
+      box-shadow: 0 0 15px var(--cyan), 0 0 30px var(--cyan);
+      animation: laserScanChamber 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes laserScanChamber {
+      0% { left: 5%; }
+      100% { left: 95%; }
+    }
+
+    .chamber-laser.alarm {
+      background: var(--rose) !important;
+      box-shadow: 0 0 20px var(--rose), 0 0 40px var(--rose) !important;
+    }
+
+    .xray-tokens-display {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    .token-char {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 32px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      font-weight: 700;
+      transition: all 0.3s ease;
+    }
+
+    .token-char.spoofed {
+      background: rgba(244, 63, 94, 0.25) !important;
+      border-color: var(--rose) !important;
+      color: #fda4af !important;
+      box-shadow: 0 0 12px rgba(244, 63, 94, 0.4);
+      animation: pulseAlert 0.8s infinite alternate;
+    }
+
+    @keyframes pulseAlert {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.15); }
+    }
+
+    .token-char.safe-match {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--emerald);
+      color: #6ee7b7;
+    }
+
+    .xray-meta-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .meta-chip {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
+    }
+
+    /* Right: Deep Plain-English Explanation */
+    .sim-explanation-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .explanation-badge-step {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--cyan);
+      margin-bottom: 6px;
+    }
+
+    .explanation-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 10px;
+      line-height: 1.25;
+    }
+
+    .explanation-body {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+
+    .explanation-callout {
+      background: rgba(0, 240, 255, 0.06);
+      border-left: 3px solid var(--cyan);
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.82rem;
+      color: #d1d5db;
+      line-height: 1.5;
+    }
+
+    .sim-footer-metrics {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      margin-top: 14px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+
+    .sim-footer-metrics span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .sim-footer-metrics span strong {
+      color: var(--cyan);
+    }
+
+    /* ========================================================= */
+    /* THE SENTINEL STUDIO COCKPIT                               */
+    /* ========================================================= */
     .studio-wrapper {
       margin: 3.5rem auto 5rem;
-      max-width: 1200px;
-      border-radius: 20px;
-      background: linear-gradient(180deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.8) 100%);
+      max-width: 1220px;
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(30, 41, 59, 0.5) 0%, rgba(13, 20, 38, 0.9) 100%);
       padding: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 40px rgba(0, 240, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.8), 0 0 50px rgba(0, 240, 255, 0.08);
+      position: relative;
     }
 
     .studio-window {
-      background: #0b0f1a;
-      border-radius: 12px;
+      background: #090e1a;
+      border-radius: 16px;
       border: 1px solid rgba(255, 255, 255, 0.08);
       overflow: hidden;
       display: flex;
       flex-direction: column;
     }
 
-    /* Studio Header */
+    /* Studio Topbar */
     .studio-topbar {
-      height: 48px;
-      background: #0e1424;
+      height: 52px;
+      background: #0d1322;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 0 16px;
+      padding: 0 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 14px;
     }
 
     .mac-dots {
@@ -398,7 +862,6 @@
       align-items: center;
       gap: 8px;
     }
-
     .mac-dot {
       width: 11px;
       height: 11px;
@@ -416,19 +879,40 @@
       font-size: 0.75rem;
       color: var(--text-muted);
       background: rgba(255, 255, 255, 0.04);
-      padding: 4px 12px;
+      padding: 4px 14px;
       border-radius: 6px;
       border: 1px solid rgba(255, 255, 255, 0.06);
     }
+    .studio-title-pill i { color: var(--cyan); }
 
-    .studio-title-pill i {
-      color: var(--cyan);
+    /* Vidyst Waveform Visualizer */
+    .waveform-visualizer {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 18px;
+    }
+    .wave-bar {
+      width: 3px;
+      background: var(--cyan);
+      border-radius: 2px;
+      animation: waveBounce 0.8s ease-in-out infinite alternate;
+    }
+    .wave-bar:nth-child(2) { animation-delay: -0.2s; height: 60%; }
+    .wave-bar:nth-child(3) { animation-delay: -0.4s; height: 90%; }
+    .wave-bar:nth-child(4) { animation-delay: -0.1s; height: 40%; }
+    .wave-bar:nth-child(5) { animation-delay: -0.6s; height: 80%; }
+    .wave-bar:nth-child(6) { animation-delay: -0.3s; height: 50%; }
+
+    @keyframes waveBounce {
+      0% { height: 20%; opacity: 0.4; }
+      100% { height: 100%; opacity: 1; }
     }
 
     .studio-stats {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
       font-size: 0.75rem;
       font-weight: 600;
     }
@@ -436,32 +920,24 @@
     .stat-badge {
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
       color: var(--emerald);
       background: rgba(16, 185, 129, 0.1);
-      padding: 3px 8px;
-      border-radius: 4px;
-      border: 1px solid rgba(16, 185, 129, 0.2);
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      font-family: var(--font-mono);
     }
 
-    .stat-badge .live-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--emerald);
-      box-shadow: 0 0 6px var(--emerald);
-      animation: blinkDot 1.5s infinite;
-    }
-
-    /* Scenario Selector Toolbar (Vidyst Layout Bar) */
+    /* Scenario Selector Toolbar */
     .scenario-toolbar {
-      background: #111827;
+      background: #0f172a;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 10px 16px;
+      padding: 12px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 14px;
       flex-wrap: wrap;
     }
 
@@ -480,15 +956,15 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      background: rgba(0, 0, 0, 0.3);
+      background: rgba(0, 0, 0, 0.35);
       padding: 4px;
-      border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
     }
 
     .scenario-tab {
-      padding: 6px 14px;
-      border-radius: 6px;
+      padding: 7px 15px;
+      border-radius: 7px;
       background: transparent;
       border: none;
       color: var(--text-muted);
@@ -499,53 +975,54 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      transition: all 0.2s ease;
+      transition: all 0.25s ease;
     }
 
     .scenario-tab:hover {
       color: var(--text-main);
-      background: rgba(255, 255, 255, 0.04);
+      background: rgba(255, 255, 255, 0.05);
     }
 
     .scenario-tab.active {
-      background: rgba(0, 240, 255, 0.12);
+      background: rgba(0, 240, 255, 0.15);
       color: var(--cyan);
-      box-shadow: 0 2px 8px rgba(0, 240, 255, 0.15);
-      border: 1px solid rgba(0, 240, 255, 0.3);
+      box-shadow: 0 2px 10px rgba(0, 240, 255, 0.2);
+      border: 1px solid rgba(0, 240, 255, 0.35);
     }
 
-    /* Studio Main Stage (3-Column Interactive Visual Flow) */
+    /* Studio Main Stage */
     .studio-stage {
       padding: 24px;
       display: grid;
-      grid-template-columns: 1.1fr 1fr 1.2fr;
+      grid-template-columns: 1.15fr 1fr 1.25fr;
       gap: 20px;
-      min-height: 440px;
-      background: radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.6) 0%, #070a13 100%);
+      min-height: 460px;
+      background: radial-gradient(circle at 50% 50%, rgba(13, 20, 38, 0.6) 0%, #060911 100%);
+      position: relative;
     }
 
     @media (max-width: 992px) {
-      .studio-stage {
-        grid-template-columns: 1fr;
-      }
+      .studio-stage { grid-template-columns: 1fr; }
     }
 
     .studio-card {
-      background: rgba(15, 23, 42, 0.8);
-      border-radius: 12px;
+      background: rgba(13, 20, 38, 0.8);
+      border-radius: 14px;
       border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 18px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
       position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
     }
 
     .card-header-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 14px;
-      padding-bottom: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
 
@@ -569,9 +1046,34 @@
       color: var(--text-muted);
     }
 
-    /* Left Stage: Agent Request Details */
-    .agent-field {
+    /* Laser Scanning Bar on Input URL */
+    .scanning-laser-box {
+      position: relative;
+      overflow: hidden;
+      border-radius: 8px;
       margin-bottom: 12px;
+    }
+
+    .laser-line {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--cyan);
+      box-shadow: 0 0 10px var(--cyan), 0 0 20px var(--cyan);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .scanning-active .laser-line {
+      opacity: 1;
+      animation: laserSweep 1.2s ease-in-out infinite alternate;
+    }
+
+    @keyframes laserSweep {
+      0% { left: 0%; }
+      100% { left: 98%; }
     }
 
     .agent-field label {
@@ -585,20 +1087,20 @@
     }
 
     .agent-field .field-value {
-      background: rgba(0, 0, 0, 0.4);
-      padding: 8px 12px;
-      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.45);
+      padding: 10px 14px;
+      border-radius: 8px;
       font-family: var(--font-mono);
       font-size: 0.8rem;
       color: var(--text-main);
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.06);
       word-break: break-all;
     }
 
     .agent-badge-row {
       display: flex;
       gap: 8px;
-      margin-top: 10px;
+      margin-top: 14px;
       flex-wrap: wrap;
     }
 
@@ -612,31 +1114,32 @@
       border: 1px solid rgba(99, 102, 241, 0.25);
     }
 
-    /* Center Stage: The 4 In-Memory Gates */
+    /* The 4 Gates in Middle Column */
     .gates-pipeline {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
       justify-content: center;
       height: 100%;
     }
 
     .gate-item {
-      background: rgba(0, 0, 0, 0.35);
+      background: rgba(0, 0, 0, 0.4);
       border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 8px;
-      padding: 10px 14px;
+      border-radius: 10px;
+      padding: 12px 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      transition: all 0.3s ease;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
     }
 
-    .gate-item.active-scan {
-      border-color: rgba(0, 240, 255, 0.4);
-      box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
+    .gate-item.pulse-scan {
+      border-color: var(--cyan);
+      box-shadow: 0 0 20px var(--cyan-glow);
+      transform: scale(1.02);
     }
 
     .gate-info {
@@ -646,14 +1149,14 @@
     }
 
     .gate-icon {
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
       background: rgba(255, 255, 255, 0.05);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.8rem;
+      font-size: 0.9rem;
       color: var(--text-muted);
       transition: all 0.3s ease;
     }
@@ -673,32 +1176,31 @@
       font-family: var(--font-mono);
       font-size: 0.7rem;
       font-weight: 700;
-      padding: 3px 8px;
+      padding: 3px 9px;
       border-radius: 9999px;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
+      transition: all 0.3s ease;
     }
 
     .status-pass {
       background: rgba(16, 185, 129, 0.15);
       color: var(--emerald);
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      border: 1px solid rgba(16, 185, 129, 0.35);
     }
-
     .status-fail {
       background: rgba(244, 63, 94, 0.15);
       color: var(--rose);
-      border: 1px solid rgba(244, 63, 94, 0.3);
+      border: 1px solid rgba(244, 63, 94, 0.35);
     }
-
     .status-review {
       background: rgba(245, 158, 11, 0.15);
       color: var(--amber);
-      border: 1px solid rgba(245, 158, 11, 0.3);
+      border: 1px solid rgba(245, 158, 11, 0.35);
     }
 
-    /* Right Stage: Verdict Output Card */
+    /* Verdict Cockpit (Right Column) */
     .verdict-cockpit {
       display: flex;
       flex-direction: column;
@@ -707,81 +1209,112 @@
     }
 
     .verdict-hero-box {
-      border-radius: 10px;
-      padding: 16px;
+      border-radius: 12px;
+      padding: 18px;
       display: flex;
       align-items: center;
       gap: 14px;
       border: 1px solid transparent;
-      transition: all 0.3s ease;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
     }
 
     .verdict-hero-box.hero-pass {
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 78, 59, 0.25) 100%);
-      border-color: rgba(16, 185, 129, 0.4);
-      box-shadow: 0 0 25px rgba(16, 185, 129, 0.15);
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(6, 78, 59, 0.3) 100%);
+      border-color: rgba(16, 185, 129, 0.45);
+      box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
     }
-
     .verdict-hero-box.hero-block {
-      background: linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(136, 19, 55, 0.25) 100%);
-      border-color: rgba(244, 63, 94, 0.4);
-      box-shadow: 0 0 25px rgba(244, 63, 94, 0.15);
+      background: linear-gradient(135deg, rgba(244, 63, 94, 0.18) 0%, rgba(136, 19, 55, 0.3) 100%);
+      border-color: rgba(244, 63, 94, 0.45);
+      box-shadow: 0 0 30px rgba(244, 63, 94, 0.2);
     }
-
     .verdict-hero-box.hero-review {
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(120, 53, 15, 0.25) 100%);
-      border-color: rgba(245, 158, 11, 0.4);
-      box-shadow: 0 0 25px rgba(245, 158, 11, 0.15);
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(120, 53, 15, 0.3) 100%);
+      border-color: rgba(245, 158, 11, 0.45);
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.2);
     }
 
     .verdict-circle-icon {
-      width: 48px;
-      height: 48px;
+      width: 52px;
+      height: 52px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.4rem;
+      font-size: 1.5rem;
       flex-shrink: 0;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     .hero-pass .verdict-circle-icon {
       background: rgba(16, 185, 129, 0.25);
       color: var(--emerald);
-      box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
     }
-
     .hero-block .verdict-circle-icon {
       background: rgba(244, 63, 94, 0.25);
       color: var(--rose);
-      box-shadow: 0 0 15px rgba(244, 63, 94, 0.3);
+      box-shadow: 0 0 20px rgba(244, 63, 94, 0.4);
     }
-
     .hero-review .verdict-circle-icon {
       background: rgba(245, 158, 11, 0.25);
       color: var(--amber);
-      box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
     }
 
     .verdict-main-text h4 {
       font-size: 1.15rem;
       font-weight: 800;
       letter-spacing: -0.01em;
-      margin-bottom: 2px;
+      margin-bottom: 3px;
     }
-
     .verdict-main-text p {
       font-size: 0.78rem;
       color: var(--text-muted);
     }
 
-    .plain-english-box {
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+    /* Risk Score Meter Bar */
+    .risk-meter-wrapper {
+      background: rgba(0, 0, 0, 0.35);
       border-radius: 8px;
-      padding: 12px;
-      font-size: 0.8rem;
-      line-height: 1.5;
+      padding: 10px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .meter-label-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+
+    .meter-track {
+      height: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 4px;
+      transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.4s ease;
+    }
+
+    .plain-english-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 0.82rem;
+      line-height: 1.55;
     }
 
     .plain-english-box strong {
@@ -796,22 +1329,20 @@
     .guidance-box {
       margin-top: auto;
       border-radius: 8px;
-      padding: 10px 12px;
+      padding: 12px;
       display: flex;
       align-items: flex-start;
       gap: 10px;
-      font-size: 0.78rem;
+      font-size: 0.8rem;
+      transition: all 0.3s ease;
     }
 
-    .guidance-box i {
-      margin-top: 2px;
-      font-size: 0.9rem;
-    }
-
-    /* SECTION 2: SYSTEM HIERARCHY (The Core Centerpiece) */
+    /* ========================================================= */
+    /* SYSTEM HIERARCHY                                          */
+    /* ========================================================= */
     .section-header {
       text-align: center;
-      max-width: 720px;
+      max-width: 740px;
       margin: 0 auto 3.5rem;
     }
 
@@ -826,7 +1357,7 @@
     }
 
     .section-title {
-      font-size: clamp(2rem, 3.8vw, 2.75rem);
+      font-size: clamp(2rem, 3.8vw, 2.85rem);
       font-weight: 800;
       letter-spacing: -0.03em;
       line-height: 1.15;
@@ -839,84 +1370,110 @@
       line-height: 1.6;
     }
 
-    /* Hierarchy Architecture Flow Diagram */
     .hierarchy-container {
-      background: rgba(15, 23, 42, 0.6);
+      background: rgba(13, 20, 38, 0.6);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 20px;
-      padding: 2.5rem;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      border-radius: 24px;
+      padding: 3rem 2.5rem;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
       position: relative;
+      overflow: hidden;
+    }
+
+    /* Glowing Circuit Cable */
+    .circuit-conduit {
+      position: absolute;
+      left: 42px;
+      top: 60px;
+      bottom: 60px;
+      width: 4px;
+      background: linear-gradient(180deg, var(--cyan) 0%, var(--violet) 40%, var(--amber) 75%, var(--emerald) 100%);
+      border-radius: 2px;
+      z-index: 1;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+    }
+
+    .traveling-photon {
+      position: absolute;
+      left: -4px;
+      width: 12px;
+      height: 24px;
+      border-radius: 6px;
+      background: #ffffff;
+      box-shadow: 0 0 15px #ffffff, 0 0 30px var(--cyan);
+      animation: packetTravel 4s linear infinite;
+    }
+
+    @keyframes packetTravel {
+      0% { top: 0%; opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { top: 96%; opacity: 0; }
     }
 
     .hierarchy-tiers {
       display: flex;
       flex-direction: column;
-      gap: 2rem;
+      gap: 2.25rem;
       position: relative;
-    }
-
-    /* Connector Pipe */
-    .hierarchy-connector {
-      position: absolute;
-      left: 36px;
-      top: 60px;
-      bottom: 60px;
-      width: 4px;
-      background: linear-gradient(180deg, var(--cyan) 0%, var(--violet) 50%, var(--emerald) 100%);
-      border-radius: 2px;
-      z-index: 1;
-      box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+      z-index: 2;
     }
 
     .hierarchy-tier-card {
-      position: relative;
-      z-index: 2;
-      background: rgba(11, 15, 26, 0.95);
+      background: rgba(10, 15, 29, 0.95);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      padding: 1.75rem 2rem 1.75rem 5rem;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 16px;
+      padding: 1.75rem 2rem 1.75rem 5.5rem;
+      position: relative;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
     }
 
     .hierarchy-tier-card:hover {
-      border-color: rgba(0, 240, 255, 0.3);
-      transform: translateX(4px);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 240, 255, 0.08);
+      border-color: rgba(0, 240, 255, 0.4);
+      transform: translateX(6px);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6), 0 0 25px rgba(0, 240, 255, 0.12);
     }
 
     .tier-node-indicator {
       position: absolute;
       left: 20px;
-      top: 28px;
-      width: 36px;
-      height: 36px;
+      top: 26px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
-      background: #070a13;
+      background: #060911;
       border: 3px solid var(--cyan);
-      box-shadow: 0 0 15px var(--cyan-glow);
+      box-shadow: 0 0 20px var(--cyan-glow);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.9rem;
+      font-size: 1.05rem;
       color: var(--cyan);
       font-weight: 800;
+      transition: all 0.3s ease;
+    }
+
+    .hierarchy-tier-card:hover .tier-node-indicator {
+      transform: scale(1.12);
+      border-color: #ffffff;
+      box-shadow: 0 0 25px #ffffff;
     }
 
     .tier-content-grid {
       display: grid;
       grid-template-columns: 2fr 3fr;
-      gap: 2rem;
+      gap: 2.25rem;
       align-items: start;
     }
 
-    @media (max-width: 860px) {
+    @media (max-width: 880px) {
       .tier-content-grid { grid-template-columns: 1fr; }
-      .hierarchy-tier-card { padding-left: 4.5rem; }
+      .hierarchy-tier-card { padding-left: 4.8rem; }
     }
 
     .tier-header-info h3 {
-      font-size: 1.25rem;
+      font-size: 1.3rem;
       font-weight: 700;
       color: var(--text-main);
       display: flex;
@@ -929,49 +1486,51 @@
       font-size: 0.7rem;
       font-family: var(--font-mono);
       font-weight: 700;
-      padding: 2px 8px;
+      padding: 3px 8px;
       border-radius: 4px;
       background: rgba(0, 240, 255, 0.1);
       color: var(--cyan);
-      border: 1px solid rgba(0, 240, 255, 0.2);
+      border: 1px solid rgba(0, 240, 255, 0.25);
     }
 
     .tier-role-desc {
       font-size: 0.88rem;
       color: var(--text-muted);
-      line-height: 1.5;
+      line-height: 1.55;
     }
 
     .tier-submodules {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
 
     .submodule-pill {
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid rgba(255, 255, 255, 0.06);
       border-radius: 8px;
-      padding: 8px 12px;
+      padding: 10px 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 14px;
+      transition: all 0.25s ease;
+    }
+
+    .submodule-pill:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(0, 240, 255, 0.2);
     }
 
     .submodule-title {
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       font-weight: 600;
       color: var(--text-main);
       display: flex;
       align-items: center;
       gap: 8px;
     }
-
-    .submodule-title i {
-      color: var(--cyan);
-      font-size: 0.85rem;
-    }
+    .submodule-title i { color: var(--cyan); }
 
     .submodule-detail {
       font-size: 0.72rem;
@@ -979,12 +1538,12 @@
       font-family: var(--font-mono);
     }
 
-    /* SECTION 3: STEP-BY-STEP "HOW IT ACTUALLY WORKS" */
+    /* STEP-BY-STEP PIPELINE */
     .flow-steps-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 1.5rem;
-      margin-top: 2rem;
+      margin-top: 2.5rem;
     }
 
     @media (max-width: 1024px) {
@@ -995,32 +1554,32 @@
     }
 
     .flow-step-card {
-      background: rgba(15, 23, 42, 0.65);
+      background: rgba(13, 20, 38, 0.7);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 1.75rem 1.5rem;
+      border-radius: 18px;
+      padding: 1.85rem 1.5rem;
       position: relative;
       display: flex;
       flex-direction: column;
-      transition: all 0.3s ease;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .flow-step-card:hover {
-      border-color: rgba(0, 240, 255, 0.3);
-      transform: translateY(-4px);
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 240, 255, 0.06);
+      border-color: var(--cyan);
+      transform: translateY(-5px);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 25px rgba(0, 240, 255, 0.1);
     }
 
     .step-number-tag {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
       background: rgba(0, 240, 255, 0.1);
       border: 1px solid rgba(0, 240, 255, 0.25);
       color: var(--cyan);
       font-weight: 800;
       font-family: var(--font-mono);
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1029,19 +1588,19 @@
 
     .step-time-badge {
       position: absolute;
-      top: 1.75rem;
+      top: 1.85rem;
       right: 1.5rem;
       font-family: var(--font-mono);
       font-size: 0.68rem;
       color: var(--emerald);
-      background: rgba(16, 185, 129, 0.1);
-      padding: 2px 6px;
+      background: rgba(16, 185, 129, 0.12);
+      padding: 3px 7px;
       border-radius: 4px;
-      border: 1px solid rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.25);
     }
 
     .flow-step-card h4 {
-      font-size: 1.05rem;
+      font-size: 1.1rem;
       font-weight: 700;
       color: var(--text-main);
       margin-bottom: 0.5rem;
@@ -1057,35 +1616,36 @@
     }
 
     .step-mini-code {
-      margin-top: 1rem;
-      background: rgba(0, 0, 0, 0.4);
+      margin-top: 1.25rem;
+      background: rgba(0, 0, 0, 0.45);
       border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 6px;
-      padding: 8px 10px;
+      border-radius: 8px;
+      padding: 10px 12px;
       font-family: var(--font-mono);
       font-size: 0.72rem;
       color: var(--cyan);
       overflow-x: auto;
     }
 
-    /* SECTION 4: LIVE INTERACTIVE LAB */
+    /* LIVE INTERACTIVE LAB */
     .lab-box {
-      background: rgba(15, 23, 42, 0.75);
+      background: rgba(13, 20, 38, 0.75);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 20px;
-      padding: 2.25rem;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-      max-width: 960px;
+      border-radius: 22px;
+      padding: 2.5rem;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.65);
+      max-width: 980px;
       margin: 0 auto;
+      backdrop-filter: blur(14px);
     }
 
     .lab-input-group {
       display: flex;
-      gap: 10px;
-      margin-bottom: 1rem;
+      gap: 12px;
+      margin-bottom: 1.25rem;
     }
 
-    @media (max-width: 700px) {
+    @media (max-width: 720px) {
       .lab-input-group { flex-direction: column; }
     }
 
@@ -1093,18 +1653,18 @@
       flex: 1;
       background: rgba(0, 0, 0, 0.5);
       border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 10px;
-      padding: 0.85rem 1.25rem;
+      border-radius: 12px;
+      padding: 0.9rem 1.4rem;
       color: var(--text-main);
       font-family: var(--font-mono);
-      font-size: 0.9rem;
+      font-size: 0.92rem;
       outline: none;
-      transition: all 0.2s ease;
+      transition: all 0.25s ease;
     }
 
     .lab-input:focus {
       border-color: var(--cyan);
-      box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
     }
 
     .lab-presets {
@@ -1126,8 +1686,8 @@
     .preset-chip {
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 6px;
-      padding: 4px 10px;
+      border-radius: 8px;
+      padding: 5px 12px;
       font-size: 0.75rem;
       font-family: var(--font-mono);
       color: var(--text-muted);
@@ -1139,23 +1699,20 @@
     }
 
     .preset-chip:hover {
-      background: rgba(0, 240, 255, 0.1);
-      border-color: rgba(0, 240, 255, 0.3);
+      background: rgba(0, 240, 255, 0.12);
+      border-color: rgba(0, 240, 255, 0.35);
       color: var(--cyan);
+      transform: translateY(-1px);
     }
 
     .preset-chip.chip-bad:hover {
-      background: rgba(244, 63, 94, 0.1);
-      border-color: rgba(244, 63, 94, 0.3);
+      background: rgba(244, 63, 94, 0.12);
+      border-color: rgba(244, 63, 94, 0.35);
       color: var(--rose);
+      transform: translateY(-1px);
     }
 
-    /* Live Output Result Container */
-    #liveLabResult {
-      transition: all 0.3s ease;
-    }
-
-    /* SECTION 5: 6 DEFENSIVE PILLARS (Feature Cards) */
+    /* 6 PILLARS */
     .features-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -1171,30 +1728,30 @@
     }
 
     .feature-card {
-      background: rgba(15, 23, 42, 0.6);
+      background: rgba(13, 20, 38, 0.65);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 1.75rem;
-      transition: all 0.3s ease;
+      border-radius: 18px;
+      padding: 1.85rem;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .feature-card:hover {
-      border-color: rgba(0, 240, 255, 0.3);
-      transform: translateY(-3px);
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 15px rgba(0, 240, 255, 0.05);
+      border-color: rgba(0, 240, 255, 0.35);
+      transform: translateY(-4px);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 240, 255, 0.08);
     }
 
     .feature-icon-box {
-      width: 44px;
-      height: 44px;
+      width: 46px;
+      height: 46px;
       border-radius: 12px;
       background: rgba(0, 240, 255, 0.1);
-      border: 1px solid rgba(0, 240, 255, 0.2);
+      border: 1px solid rgba(0, 240, 255, 0.25);
       color: var(--cyan);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.25rem;
+      font-size: 1.3rem;
       margin-bottom: 1.25rem;
     }
 
@@ -1211,11 +1768,11 @@
       line-height: 1.55;
     }
 
-    /* SECTION 6: COMPARISON MATRIX */
+    /* COMPARISON MATRIX */
     .comparison-table-wrapper {
-      background: rgba(15, 23, 42, 0.65);
+      background: rgba(13, 20, 38, 0.7);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
+      border-radius: 18px;
       overflow-x: auto;
       margin-top: 2rem;
     }
@@ -1224,16 +1781,16 @@
       width: 100%;
       border-collapse: collapse;
       text-align: left;
-      font-size: 0.85rem;
+      font-size: 0.88rem;
     }
 
     table.comparison-table th, table.comparison-table td {
-      padding: 1rem 1.25rem;
+      padding: 1.15rem 1.4rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
 
     table.comparison-table th {
-      background: rgba(0, 0, 0, 0.3);
+      background: rgba(0, 0, 0, 0.35);
       font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
@@ -1243,7 +1800,7 @@
 
     table.comparison-table th.highlight-col,
     table.comparison-table td.highlight-col {
-      background: rgba(0, 240, 255, 0.04);
+      background: rgba(0, 240, 255, 0.05);
       border-left: 1px solid rgba(0, 240, 255, 0.2);
       border-right: 1px solid rgba(0, 240, 255, 0.2);
     }
@@ -1260,19 +1817,18 @@
       gap: 6px;
       font-weight: 600;
     }
-
     .badge-x {
       color: var(--rose);
       display: inline-flex;
       align-items: center;
       gap: 6px;
       font-weight: 500;
-      opacity: 0.7;
+      opacity: 0.75;
     }
 
-    /* SECTION 7: FAQ ACCORDION */
+    /* FAQ ACCORDION */
     .faq-container {
-      max-width: 820px;
+      max-width: 840px;
       margin: 2rem auto 0;
       display: flex;
       flex-direction: column;
@@ -1280,19 +1836,19 @@
     }
 
     .faq-item {
-      background: rgba(15, 23, 42, 0.65);
+      background: rgba(13, 20, 38, 0.7);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
+      border-radius: 14px;
       overflow: hidden;
       transition: all 0.2s ease;
     }
 
     .faq-item:hover {
-      border-color: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.18);
     }
 
     .faq-question {
-      padding: 1.25rem 1.5rem;
+      padding: 1.35rem 1.6rem;
       width: 100%;
       background: transparent;
       border: none;
@@ -1310,8 +1866,8 @@
 
     .faq-question i {
       color: var(--cyan);
-      font-size: 0.85rem;
-      transition: transform 0.2s ease;
+      font-size: 0.9rem;
+      transition: transform 0.25s ease;
     }
 
     .faq-item.open .faq-question i {
@@ -1320,65 +1876,54 @@
 
     .faq-answer {
       display: none;
-      padding: 0 1.5rem 1.25rem;
-      font-size: 0.88rem;
+      padding: 0 1.6rem 1.35rem;
+      font-size: 0.9rem;
       color: var(--text-muted);
       line-height: 1.6;
       border-top: 1px solid rgba(255, 255, 255, 0.04);
-      padding-top: 0.85rem;
+      padding-top: 0.9rem;
     }
 
     .faq-item.open .faq-answer {
       display: block;
     }
 
-    /* SECTION 8: BOTTOM CTA BANNER */
+    /* BOTTOM CTA BANNER */
     .cta-banner {
-      margin: 6rem auto 4rem;
+      margin: 6rem auto 4.5rem;
       max-width: 1100px;
-      border-radius: 24px;
-      background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.7) 100%);
-      border: 1px solid rgba(0, 240, 255, 0.25);
-      padding: 3.5rem 2rem;
+      border-radius: 28px;
+      background: linear-gradient(135deg, rgba(13, 20, 38, 0.95) 0%, rgba(30, 41, 59, 0.8) 100%);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      padding: 3.75rem 2.5rem;
       text-align: center;
-      box-shadow: 0 25px 60px -10px rgba(0, 240, 255, 0.15);
+      box-shadow: 0 25px 70px -10px rgba(0, 240, 255, 0.2);
       position: relative;
       overflow: hidden;
     }
 
-    .cta-banner::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(0, 240, 255, 0.08) 0%, transparent 60%);
-      pointer-events: none;
-    }
-
     .cta-title {
-      font-size: clamp(2rem, 3.5vw, 2.75rem);
+      font-size: clamp(2.1rem, 3.8vw, 2.85rem);
       font-weight: 800;
       letter-spacing: -0.03em;
       margin-bottom: 1rem;
     }
 
     .cta-desc {
-      font-size: 1.1rem;
+      font-size: 1.15rem;
       color: var(--text-muted);
-      max-width: 600px;
-      margin: 0 auto 2rem;
+      max-width: 640px;
+      margin: 0 auto 2.25rem;
       line-height: 1.6;
     }
 
     /* Footer */
     footer.site-footer {
       border-top: 1px solid var(--border-subtle);
-      background: rgba(7, 10, 18, 0.95);
-      padding: 3rem 1.5rem 2rem;
+      background: rgba(6, 9, 17, 0.95);
+      padding: 3.5rem 1.5rem 2.5rem;
       color: var(--text-dim);
-      font-size: 0.8rem;
+      font-size: 0.82rem;
     }
 
     .footer-grid {
@@ -1390,7 +1935,7 @@
       margin-bottom: 2.5rem;
     }
 
-    @media (max-width: 800px) {
+    @media (max-width: 820px) {
       .footer-grid { grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 480px) {
@@ -1401,7 +1946,7 @@
       color: var(--text-main);
       font-size: 0.85rem;
       font-weight: 700;
-      margin-bottom: 1rem;
+      margin-bottom: 1.15rem;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
@@ -1410,7 +1955,7 @@
       list-style: none;
       display: flex;
       flex-direction: column;
-      gap: 0.6rem;
+      gap: 0.65rem;
     }
 
     .footer-links a {
@@ -1421,10 +1966,7 @@
       align-items: center;
       gap: 6px;
     }
-
-    .footer-links a:hover {
-      color: var(--cyan);
-    }
+    .footer-links a:hover { color: var(--cyan); }
 
     .footer-bottom {
       max-width: 1240px;
@@ -1438,25 +1980,27 @@
       gap: 1rem;
     }
 
-    /* Animations */
-    @keyframes pulseGlow {
-      0%, 100% { box-shadow: 0 0 10px rgba(0, 240, 255, 0.15); border-color: rgba(0, 240, 255, 0.25); }
-      50% { box-shadow: 0 0 20px rgba(0, 240, 255, 0.35); border-color: rgba(0, 240, 255, 0.5); }
+    /* Keyframes */
+    @keyframes pulseBorder {
+      0% { border-color: rgba(0, 240, 255, 0.25); box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); }
+      100% { border-color: rgba(0, 240, 255, 0.6); box-shadow: 0 0 25px rgba(0, 240, 255, 0.3); }
     }
-
-    @keyframes blinkDot {
+    @keyframes liveBlink {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
+      50% { opacity: 0.35; transform: scale(0.85); }
     }
   </style>
 </head>
 <body>
 
-  <!-- Vidyst-Style Navigation Bar -->
+  <!-- Background Animated Cyber Mesh Canvas -->
+  <canvas id="meshCanvas"></canvas>
+
+  <!-- Navigation Bar -->
   <header class="vidyst-header">
     <div class="nav-container">
       <a href="/" class="brand">
-        <div class="brand-icon">
+        <div class="brand-icon-box">
           <i class="fa-solid fa-shield-halved"></i>
         </div>
         <div class="brand-text">
@@ -1465,6 +2009,7 @@
       </a>
 
       <nav class="nav-links">
+        <a href="#visual-simulation" class="nav-link"><i class="fa-solid fa-play-circle" style="color:var(--cyan)"></i> Live Visualizer</a>
         <a href="#sentinel-studio" class="nav-link"><i class="fa-solid fa-desktop"></i> Sentinel Studio</a>
         <a href="#system-hierarchy" class="nav-link"><i class="fa-solid fa-sitemap"></i> Hierarchy</a>
         <a href="#how-it-works" class="nav-link"><i class="fa-solid fa-route"></i> How It Works</a>
@@ -1500,12 +2045,12 @@
         </h1>
 
         <p class="hero-desc">
-          When AI agents autonomously browse, hire services, and pay with crypto, what stops them from clicking a spoofed checkout or falling for a wallet-draining trap? PayGuard intercepts every link and payment intent, running <strong>pure in-memory verification</strong> before a single satoshi moves.
+          When AI agents autonomously browse, hire compute, and pay with crypto, what stops them from clicking a spoofed checkout or falling for a wallet-draining trap? PayGuard intercepts every link and payment intent, running <strong>pure in-memory verification</strong> before a single satoshi moves.
         </p>
 
         <div class="hero-cta-group">
-          <a href="#live-lab" class="btn btn-glow">
-            <i class="fa-solid fa-play"></i> Test Interactive Sentinel
+          <a href="#visual-simulation" class="btn btn-glow">
+            <i class="fa-solid fa-play"></i> Watch Live Visualization
           </a>
           <a href="#system-hierarchy" class="btn btn-secondary">
             <i class="fa-solid fa-sitemap"></i> Explore 4-Layer Hierarchy
@@ -1525,24 +2070,178 @@
       </div>
     </section>
 
+    <!-- ========================================================= -->
+    <!-- NEW SECTION: ANIMATED VISUALIZATION EXPLAINER             -->
+    <!-- ========================================================= -->
+    <section id="visual-simulation" class="container">
+      <div class="section-header">
+        <span class="section-eyebrow">Interactive Visualizer</span>
+        <h2 class="section-title">Visualizing the 5-Station Security Pipeline</h2>
+        <p class="section-subtitle">
+          Watch a live payment intent packet travel through PayGuard's in-memory inspection chambers. Switch attack modes or scrub through each station to see exactly how threats are intercepted.
+        </p>
+      </div>
+
+      <div class="simulator-wrapper">
+        <!-- Top Controls: Auto-Play, Step, and Attack Modes -->
+        <div class="sim-control-bar">
+          <div class="sim-playback-controls">
+            <button class="sim-btn" id="simPlayBtn" onclick="toggleSimPlay()">
+              <i class="fa-solid fa-pause" id="simPlayIcon"></i> <span id="simPlayText">Pause</span>
+            </button>
+            <button class="sim-btn" onclick="stepSim(-1)">
+              <i class="fa-solid fa-backward-step"></i> Prev
+            </button>
+            <button class="sim-btn" onclick="stepSim(1)">
+              <i class="fa-solid fa-forward-step"></i> Next
+            </button>
+            <button class="sim-btn" onclick="restartSim()">
+              <i class="fa-solid fa-arrow-rotate-left"></i> Restart
+            </button>
+          </div>
+
+          <div class="sim-mode-pills">
+            <button class="sim-mode-btn active mode-safe" id="modeBtnSafe" onclick="setSimMode('safe')">
+              <i class="fa-solid fa-circle-check"></i> Legitimate Merchant
+            </button>
+            <button class="sim-mode-btn" id="modeBtnHomoglyph" onclick="setSimMode('homoglyph')">
+              <i class="fa-solid fa-mask"></i> Cyrillic Spoof Attack
+            </button>
+            <button class="sim-mode-btn" id="modeBtnDrain" onclick="setSimMode('drain')">
+              <i class="fa-solid fa-money-bill-transfer"></i> $500 Drain Attack
+            </button>
+          </div>
+        </div>
+
+        <!-- Animated Physical Track with 5 Stations -->
+        <div class="sim-stage-track">
+          <!-- Glowing Conduit Line with Dynamic Fill -->
+          <div class="track-line">
+            <div class="track-progress-fill" id="simTrackFill" style="width: 20%;"></div>
+          </div>
+
+          <!-- 5 Physical Station Nodes -->
+          <div class="track-stations">
+            <!-- Station 1 -->
+            <div class="sim-station active" id="station1" onclick="jumpToStation(1)">
+              <div class="station-node">
+                <i class="fa-solid fa-robot"></i>
+              </div>
+              <span class="station-title">1. Agent Intent</span>
+              <span class="station-step-num">HTTP 402</span>
+            </div>
+
+            <!-- Station 2 -->
+            <div class="sim-station" id="station2" onclick="jumpToStation(2)">
+              <div class="station-node">
+                <i class="fa-solid fa-microchip"></i>
+              </div>
+              <span class="station-title">2. SSRF Airgap</span>
+              <span class="station-step-num">In-Memory</span>
+            </div>
+
+            <!-- Station 3 -->
+            <div class="sim-station" id="station3" onclick="jumpToStation(3)">
+              <div class="station-node">
+                <i class="fa-solid fa-font"></i>
+              </div>
+              <span class="station-title">3. Homoglyph Lexer</span>
+              <span class="station-step-num">Punycode</span>
+            </div>
+
+            <!-- Station 4 -->
+            <div class="sim-station" id="station4" onclick="jumpToStation(4)">
+              <div class="station-node">
+                <i class="fa-solid fa-scale-balanced"></i>
+              </div>
+              <span class="station-title">4. Policy Ceiling</span>
+              <span class="station-step-num">Limit Guard</span>
+            </div>
+
+            <!-- Station 5 -->
+            <div class="sim-station" id="station5" onclick="jumpToStation(5)">
+              <div class="station-node">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <span class="station-title">5. Final Verdict</span>
+              <span class="station-step-num">Advisory Gate</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Split Screen: Live X-Ray Dissector (Left) & Plain-English Explainer (Right) -->
+        <div class="sim-detail-grid">
+          <!-- Left: Live X-Ray Dissector -->
+          <div class="packet-xray-view">
+            <div class="xray-header">
+              <span class="xray-title"><i class="fa-solid fa-radar"></i> In-Memory Packet Inspection</span>
+              <span class="xray-stream-badge" id="xrayStreamBadge">STATION 1 OF 5</span>
+            </div>
+
+            <div class="xray-chamber" id="xrayChamber">
+              <div class="chamber-laser" id="chamberLaser"></div>
+              <div class="xray-tokens-display" id="xrayTokensDisplay">
+                <!-- Dynamically populated character-by-character tokens -->
+              </div>
+            </div>
+
+            <div class="xray-meta-chips" id="xrayMetaChips">
+              <!-- Meta chips: network, asset, amount, latency -->
+            </div>
+          </div>
+
+          <!-- Right: Deep Plain-English Explanation -->
+          <div class="sim-explanation-panel">
+            <div>
+              <div class="explanation-badge-step" id="explainerBadge">STATION 1 · INBOUND AGENT INTENT</div>
+              <h3 class="explanation-title" id="explainerTitle">Agent Intercepts HTTP 402 Payment Challenge</h3>
+              <p class="explanation-body" id="explainerBody">
+                An autonomous AI agent encounters a paywalled dataset or compute resource on the web. The merchant server returns an HTTP 402 with cryptographic payment requirements. Before the agent signs anything with its wallet, PayGuard intercepts the raw intent.
+              </p>
+              <div class="explanation-callout" id="explainerCallout">
+                <strong>Why this matters to you:</strong> In traditional autonomous agent runtimes, agents blindly follow links provided by untrusted web pages, leaving their crypto wallets vulnerable to automated balance drains.
+              </div>
+            </div>
+
+            <div class="sim-footer-metrics">
+              <span>Zero SSRF: <strong id="metricSsrf">VERIFIED (0 OUTBOUND)</strong></span>
+              <span>Memory Footprint: <strong id="metricMem">3.8 KB</strong></span>
+              <span>Execution Time: <strong id="metricTime">0.00 ms</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- THE SENTINEL STUDIO COCKPIT (Vidyst Studio Mockup) -->
     <section id="sentinel-studio" class="container">
       <div class="studio-wrapper">
         <div class="studio-window">
-          <!-- Window Header -->
+          <!-- Topbar with Live Waveform -->
           <div class="studio-topbar">
             <div class="mac-dots">
               <span class="mac-dot red"></span>
               <span class="mac-dot yellow"></span>
               <span class="mac-dot green"></span>
             </div>
+
             <div class="studio-title-pill">
               <i class="fa-solid fa-shield-halved"></i>
               <span>payguard-sentinel-v0.1.0 — live policy enforcement</span>
             </div>
+
             <div class="studio-stats">
+              <!-- Animated Waveform Visualizer -->
+              <div class="waveform-visualizer" title="Real-time Packet Telemetry">
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+              </div>
               <div class="stat-badge">
-                <span class="live-dot"></span>
+                <span class="pill-dot"></span>
                 <span>AIRGAPPED · ZERO SSRF</span>
               </div>
             </div>
@@ -1583,9 +2282,10 @@
                 <div class="field-value" id="scenarioAgent">AutonomousTradingAgent_v2</div>
               </div>
 
-              <div class="agent-field">
+              <div class="agent-field scanning-laser-box" id="urlLaserContainer">
                 <label>Target Checkout URL</label>
                 <div class="field-value" id="scenarioUrl" style="color:var(--cyan)">https://paybox.sh/api/v1/checkout</div>
+                <div class="laser-line"></div>
               </div>
 
               <div class="agent-field">
@@ -1608,7 +2308,7 @@
             <div class="studio-card">
               <div class="card-header-bar">
                 <span class="card-title"><i class="fa-solid fa-microchip" style="color:var(--cyan)"></i> 2. Sentinel Pipeline</span>
-                <span class="card-tag">4 IN-MEMORY GATES</span>
+                <span class="card-tag" id="pipelineLatencyTag">LATENCY: 38ms</span>
               </div>
 
               <div class="gates-pipeline">
@@ -1676,6 +2376,17 @@
                   </div>
                 </div>
 
+                <!-- Animated Risk Score Meter Bar -->
+                <div class="risk-meter-wrapper">
+                  <div class="meter-label-row">
+                    <span>Threat Confidence Score</span>
+                    <span id="riskScoreLabel" style="color:var(--emerald)">0 / 100</span>
+                  </div>
+                  <div class="meter-track">
+                    <div class="meter-fill" id="riskMeterFill" style="width: 0%; background: var(--emerald);"></div>
+                  </div>
+                </div>
+
                 <div class="plain-english-box">
                   <strong>What this means for the user:</strong>
                   <span id="scenarioPlainDesc">
@@ -1694,23 +2405,25 @@
       </div>
     </section>
 
-    <!-- SECTION 2: SYSTEM HIERARCHY (The Core Centerpiece) -->
+    <!-- SECTION 2: SYSTEM HIERARCHY -->
     <section id="system-hierarchy" class="container" style="padding: 4rem 1.5rem;">
       <div class="section-header">
         <span class="section-eyebrow">Visual Architecture & Boundaries</span>
         <h2 class="section-title">The PayGuard Security Hierarchy</h2>
         <p class="section-subtitle">
-          How does PayGuard fit between an autonomous AI agent, untrusted web merchants, and the Web3 blockchain? Here is the complete end-to-end hierarchy.
+          How does PayGuard fit between an autonomous AI agent, untrusted web merchants, and the Web3 blockchain? Follow the glowing data conduit below.
         </p>
       </div>
 
       <div class="hierarchy-container">
-        <!-- Glowing vertical pipeline backbone -->
-        <div class="hierarchy-connector"></div>
+        <!-- Glowing vertical circuit cable with traveling light photon -->
+        <div class="circuit-conduit">
+          <div class="traveling-photon"></div>
+        </div>
 
         <div class="hierarchy-tiers">
           <!-- Tier 0: Upstream AI Agent Layer -->
-          <div class="hierarchy-tier-card">
+          <div class="hierarchy-tier-card" onclick="highlightTier(this)">
             <div class="tier-node-indicator"><i class="fa-solid fa-brain"></i></div>
             <div class="tier-content-grid">
               <div class="tier-header-info">
@@ -1738,7 +2451,7 @@
           </div>
 
           <!-- Tier 1: PayGuard URL Sentinel (Anti-Phishing Layer) -->
-          <div class="hierarchy-tier-card">
+          <div class="hierarchy-tier-card" onclick="highlightTier(this)">
             <div class="tier-node-indicator"><i class="fa-solid fa-shield-virus"></i></div>
             <div class="tier-content-grid">
               <div class="tier-header-info">
@@ -1766,7 +2479,7 @@
           </div>
 
           <!-- Tier 2: Payment Policy Guard (Constraint Enforcement) -->
-          <div class="hierarchy-tier-card">
+          <div class="hierarchy-tier-card" onclick="highlightTier(this)">
             <div class="tier-node-indicator"><i class="fa-solid fa-scale-balanced"></i></div>
             <div class="tier-content-grid">
               <div class="tier-header-info">
@@ -1794,7 +2507,7 @@
           </div>
 
           <!-- Tier 3: Privacy Redaction & Threat Intel -->
-          <div class="hierarchy-tier-card">
+          <div class="hierarchy-tier-card" onclick="highlightTier(this)">
             <div class="tier-node-indicator"><i class="fa-solid fa-user-secret"></i></div>
             <div class="tier-content-grid">
               <div class="tier-header-info">
@@ -1822,7 +2535,7 @@
           </div>
 
           <!-- Tier 4: Advisory Verdict & Custody Airgap -->
-          <div class="hierarchy-tier-card">
+          <div class="hierarchy-tier-card" onclick="highlightTier(this)">
             <div class="tier-node-indicator"><i class="fa-solid fa-lock"></i></div>
             <div class="tier-content-grid">
               <div class="tier-header-info">
@@ -2165,13 +2878,13 @@
   <footer class="site-footer">
     <div class="footer-grid">
       <div class="footer-col">
-        <div class="brand" style="margin-bottom: 1rem;">
-          <div class="brand-icon" style="width:32px; height:32px; font-size:1rem;">
+        <div class="brand" style="margin-bottom: 1.25rem;">
+          <div class="brand-icon-box" style="width:34px; height:34px; font-size:1.05rem;">
             <i class="fa-solid fa-shield-halved"></i>
           </div>
-          <span class="brand-title" style="font-size:1.1rem;">PayGuard</span>
+          <span class="brand-title" style="font-size:1.15rem;">PayGuard</span>
         </div>
-        <p style="color:var(--text-dim); line-height:1.6; max-width:320px;">
+        <p style="color:var(--text-dim); line-height:1.65; max-width:320px;">
           Production-grade, zero-custody security gateway and x402 policy guard for autonomous AI agents on the PayBox Marketplace.
         </p>
       </div>
@@ -2179,6 +2892,7 @@
       <div class="footer-col">
         <h5>Interfaces</h5>
         <ul class="footer-links">
+          <li><a href="#visual-simulation"><i class="fa-solid fa-play-circle" style="color:var(--cyan)"></i> Live Visualizer</a></li>
           <li><a href="/dashboard"><i class="fa-solid fa-terminal"></i> Operator Console</a></li>
           <li><a href="#sentinel-studio"><i class="fa-solid fa-desktop"></i> Sentinel Studio</a></li>
           <li><a href="#live-lab"><i class="fa-solid fa-flask"></i> Interactive Lab</a></li>
@@ -2216,9 +2930,70 @@
     </div>
   </footer>
 
-  <!-- Interactive JavaScript Logic -->
+  <!-- Interactive Logic & Bespoke Canvas / Flow Animations -->
   <script>
-    // 1. Dynamic Rotating Badge in Hero
+    // 1. Lightweight 60fps Particle Cyber-Mesh Canvas Animation
+    (function initMeshCanvas() {
+      const canvas = document.getElementById('meshCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let w, h;
+      let particles = [];
+      const PARTICLE_COUNT = 36;
+
+      function resize() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        particles.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          vx: (Math.random() - 0.5) * 0.4,
+          vy: (Math.random() - 0.5) * 0.4,
+          radius: Math.random() * 1.8 + 1,
+          color: i % 3 === 0 ? 'rgba(0, 240, 255, 0.45)' : (i % 3 === 1 ? 'rgba(129, 140, 248, 0.35)' : 'rgba(16, 185, 129, 0.35)')
+        });
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, w, h);
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.x < 0) p.x = w;
+          if (p.x > w) p.x = 0;
+          if (p.y < 0) p.y = h;
+          if (p.y > h) p.y = 0;
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.fill();
+
+          for (let j = i + 1; j < particles.length; j++) {
+            const p2 = particles[j];
+            const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+            if (dist < 130) {
+              ctx.beginPath();
+              ctx.moveTo(p.x, p.y);
+              ctx.lineTo(p2.x, p2.y);
+              ctx.strokeStyle = `rgba(0, 240, 255, ${0.15 * (1 - dist / 130)})`;
+              ctx.lineWidth = 0.75;
+              ctx.stroke();
+            }
+          }
+        }
+        requestAnimationFrame(render);
+      }
+      render();
+    })();
+
+    // 2. Dynamic Rotator Badge
     const rotatorItems = [
       { text: "Without Phishing", icon: "fa-shield-virus", state: "state-phish" },
       { text: "Without Homoglyphs", icon: "fa-font", state: "state-homoglyph" },
@@ -2227,29 +3002,346 @@
     ];
     let rotatorIndex = 0;
     const rotatorEl = document.getElementById("dynamicRotator");
-    const rotatorTextEl = document.getElementById("rotatorText");
 
     setInterval(() => {
       rotatorIndex = (rotatorIndex + 1) % rotatorItems.length;
-      const current = rotatorItems[rotatorIndex];
+      const cur = rotatorItems[rotatorIndex];
       rotatorEl.style.opacity = '0';
-      rotatorEl.style.transform = 'translateY(10px) scale(0.95)';
+      rotatorEl.style.transform = 'translateY(8px) scale(0.96)';
       
       setTimeout(() => {
-        rotatorEl.className = `dynamic-rotator ${current.state}`;
-        rotatorEl.innerHTML = `<i class="fa-solid ${current.icon}" style="margin-right: 6px;"></i><span>${current.text}</span>`;
+        rotatorEl.className = `dynamic-rotator ${cur.state}`;
+        rotatorEl.innerHTML = `<i class="fa-solid ${cur.icon}" style="margin-right: 6px;"></i><span>${cur.text}</span>`;
         rotatorEl.style.opacity = '1';
         rotatorEl.style.transform = 'translateY(0) scale(1)';
       }, 250);
     }, 2800);
 
-    // 2. Sentinel Studio Scenario Switcher
+    // =========================================================
+    // 3. ANIMATED EXPLANATORY VISUALIZATION ENGINE
+    // =========================================================
+    let currentSimStation = 1;
+    let simMode = 'safe'; // 'safe' | 'homoglyph' | 'drain'
+    let isSimPlaying = true;
+    let simTimer = null;
+
+    const SIM_CONTENT = {
+      safe: {
+        domain: "paybox.sh",
+        tokens: ["h","t","t","p","s",":","/","/","p","a","y","b","o","x",".","s","h"],
+        amount: "1,000 units (0.001 USDC)",
+        network: "eip155:84532",
+        stations: {
+          1: {
+            title: "Agent Intercepts HTTP 402 Challenge",
+            body: "An autonomous agent receives an HTTP 402 challenge from a paywalled API. Before signing anything, PayGuard intercepts the URL, proposed network (Base Sepolia), and requested payment amount.",
+            callout: "The agent's private keys stay untouched inside its host wallet. PayGuard acts as a pure in-memory filter.",
+            chips: ["Protocol: x402 v2", "Asset: USDC (0x036C...)", "Amount: 0.001 USDC"],
+            time: "0.00 ms",
+            mem: "3.8 KB",
+            status: "pass"
+          },
+          2: {
+            title: "SSRF Airgap: Zero Network Outbound",
+            body: "PayGuard statically decomposes the URL in-memory using URL grammar parsers. It guarantees zero HTTP requests to the target URL, preventing Server-Side Request Forgery (SSRF) against internal cloud infrastructure.",
+            callout: "Malicious URLs often target AWS metadata (169.254.169.254). PayGuard never fetches target URLs, rendering SSRF impossible.",
+            chips: ["Remote Ping: BLOCKED", "Airgap: 100%", "Target Fetch: 0 bytes"],
+            time: "8.40 ms",
+            mem: "4.2 KB",
+            status: "pass"
+          },
+          3: {
+            title: "Homoglyph & Punycode Deobfuscation",
+            body: "The domain 'paybox.sh' is parsed into unicode code points. All characters are ASCII Latin [U+0061..U+007A]. No Cyrillic, Greek, or Arabic lookalike spoofing detected. Domain matches verified PayBox infrastructure.",
+            callout: "Lookalike characters that trick LLM visual embeddings or human eyes are dissected at the binary code point level.",
+            chips: ["Punycode: None", "Script: Latin ASCII", "Spoof Risk: 0.0%"],
+            time: "18.20 ms",
+            mem: "4.8 KB",
+            status: "pass"
+          },
+          4: {
+            title: "Cryptographic Policy Ceiling Enforcement",
+            body: "Proposed payment (0.001 USDC) is compared to the user's hard ceiling ($1.00 max atomic amount). Network ID 'eip155:84532' matches authorized Base Sepolia testnet rules.",
+            callout: "A malicious contract cannot request more than your configured budget. If an agent tries to overpay, it is rejected before signing.",
+            chips: ["Ceiling: $1.00", "Proposed: $0.001", "Constraint: PASS"],
+            time: "26.50 ms",
+            mem: "5.1 KB",
+            status: "pass"
+          },
+          5: {
+            title: "Advisory Verdict: Safe to Sign (PASS)",
+            body: "PayGuard returns an advisory verdict: PASS. The host agent wallet is cleared to sign the x402 payment proof. All security gates verified in under 38 milliseconds.",
+            callout: "Non-custodial guarantee fulfilled: PayGuard never executes payments directly. The host runtime retains sole signing power.",
+            chips: ["Verdict: PASS", "Risk Level: NONE", "Total Latency: 34.2 ms"],
+            time: "34.20 ms",
+            mem: "5.4 KB",
+            status: "pass"
+          }
+        }
+      },
+      homoglyph: {
+        domain: "pаybox.sh (Cyrillic а)",
+        tokens: ["h","t","t","p","s",":","/","/","p","а","y","b","o","x",".","s","h"],
+        amount: "1,000 units (0.001 USDC)",
+        network: "eip155:84532",
+        stations: {
+          1: {
+            title: "Agent Intercepts Deceptive Link",
+            body: "The agent received a payment checkout link from an untrusted web page. To human eyes and multimodal LLMs, 'pаybox.sh' appears identical to the official PayBox domain.",
+            callout: "Phishing attackers use lookalikes to trick autonomous bots into sending payments to attacker-owned wallets.",
+            chips: ["Raw String: https://pаybox.sh/pay", "Apparent Target: PayBox"],
+            time: "0.00 ms",
+            mem: "3.8 KB",
+            status: "pass"
+          },
+          2: {
+            title: "SSRF Airgap: Zero Network Fetch",
+            body: "Even though the domain is malicious, PayGuard parses it in RAM without dialing outbound connections. The attacker receives zero telemetry or network pingback.",
+            callout: "The attacker cannot fingerprint the agent's IP address or probe internal subnet ports.",
+            chips: ["Outbound TCP: 0", "Airgap: SECURE", "Leakage: 0"],
+            time: "7.90 ms",
+            mem: "4.1 KB",
+            status: "pass"
+          },
+          3: {
+            title: "CRITICAL: Cyrillic Homoglyph Intercepted",
+            body: "ALARM: Character at position 10 is NOT Latin 'a' (U+0061). It is Cyrillic Small Letter 'а' (U+0430). Punycode representation is 'xn--pybox-7qa.sh'. Immediate brand impersonation flag!",
+            callout: "This is a classic IDN Homoglyph attack. PayGuard immediately triggers an alert and halts the pipeline.",
+            chips: ["Character: U+0430 Cyrillic", "Punycode: xn--pybox-7qa.sh", "Impersonator: CONFIRMED"],
+            time: "14.60 ms",
+            mem: "4.9 KB",
+            status: "blocked"
+          },
+          4: {
+            title: "Policy Evaluation Halted",
+            body: "Because Gate 3 identified active malicious domain spoofing, payment intent evaluation is aborted. No further processing is performed for compromised targets.",
+            callout: "Prevents unnecessary compute on confirmed attack vectors.",
+            chips: ["Pipeline State: ABORTED", "Threat Score: 95/100"],
+            time: "15.10 ms",
+            mem: "4.9 KB",
+            status: "blocked"
+          },
+          5: {
+            title: "Advisory Verdict: Hard BLOCK",
+            body: "PayGuard delivers an advisory BLOCK verdict. The agent host runtime aborts the transaction immediately and writes a high-priority incident audit log.",
+            callout: "Result: Zero satoshis lost. The attacker's impersonation trap failed completely.",
+            chips: ["Verdict: BLOCK", "Reason: HOMOGLYPH_IMPERSONATION", "Action: ABORT"],
+            time: "15.80 ms",
+            mem: "5.0 KB",
+            status: "blocked"
+          }
+        }
+      },
+      drain: {
+        domain: "paybox.sh",
+        tokens: ["h","t","t","p","s",":","/","/","p","a","y","b","o","x",".","s","h"],
+        amount: "500,000,000 units ($500.00 USDC)",
+        network: "eip155:84532",
+        stations: {
+          1: {
+            title: "Agent Intercepts High-Value Challenge",
+            body: "A legitimate-looking merchant service issues an HTTP 402 challenge, but requests a payment of 500.00 USDC instead of the expected 0.001 USDC micro-fee.",
+            callout: "Rogue or compromised merchants can inflate invoice amounts hoping autonomous agents won't notice.",
+            chips: ["Requested: 500.00 USDC", "Currency: USDC", "Target: Verified Merchant"],
+            time: "0.00 ms",
+            mem: "3.8 KB",
+            status: "pass"
+          },
+          2: {
+            title: "SSRF Airgap Verified",
+            body: "Lexical parse confirms valid URL structure purely in memory. Zero outbound calls made.",
+            callout: "Airgap standard maintained across all requests.",
+            chips: ["SSRF: SAFE", "In-Memory: YES"],
+            time: "8.10 ms",
+            mem: "4.1 KB",
+            status: "pass"
+          },
+          3: {
+            title: "Domain Verification: PASS",
+            body: "The domain 'paybox.sh' is verified legitimate with no lookalikes or suffix attacks. The threat is in the payment requirements, not the domain.",
+            callout: "PayGuard doesn't just check domain names; it inspects the cryptographic payment requirements as well.",
+            chips: ["Domain: VERIFIED", "Phishing: NO"],
+            time: "16.40 ms",
+            mem: "4.6 KB",
+            status: "pass"
+          },
+          4: {
+            title: "CRITICAL: Policy Ceiling Exceeded",
+            body: "ALARM: Requested amount ($500.00 USDC) exceeds the user's hard policy ceiling ($1.00 USDC) by 500x! Circuit breaker trips immediately in memory.",
+            callout: "Even if an LLM is persuaded by an adversary to pay a large invoice, PayGuard's deterministic policy comparator refuses.",
+            chips: ["Policy Ceiling: $1.00", "Requested: $500.00", "Overspend: +$499.00"],
+            time: "24.90 ms",
+            mem: "5.0 KB",
+            status: "blocked"
+          },
+          5: {
+            title: "Advisory Verdict: Hard BLOCK (DRAIN PREVENTED)",
+            body: "PayGuard issues a BLOCK verdict with explicit guidance: 'Amount exceeds policy limit'. The agent terminates the transaction and prompts the human operator.",
+            callout: "Result: 500 USDC preserved in the user's wallet.",
+            chips: ["Verdict: BLOCK", "Reason: AMOUNT_LIMIT_EXCEEDED", "Wallet Saved: $500.00"],
+            time: "26.30 ms",
+            mem: "5.2 KB",
+            status: "blocked"
+          }
+        }
+      }
+    };
+
+    function renderSimStation(stationNum) {
+      currentSimStation = stationNum;
+      const data = SIM_CONTENT[simMode];
+      const stationData = data.stations[stationNum];
+      const isBlocked = stationData.status === 'blocked';
+
+      // 1. Update track progress bar
+      const fillPercentage = (stationNum / 5) * 100;
+      const trackFill = document.getElementById('simTrackFill');
+      trackFill.style.width = `${fillPercentage}%`;
+      trackFill.style.background = isBlocked ? 'var(--rose)' : 'linear-gradient(90deg, var(--cyan) 0%, var(--violet) 50%, var(--emerald) 100%)';
+      trackFill.style.boxShadow = isBlocked ? '0 0 20px var(--rose)' : '0 0 16px var(--cyan)';
+
+      // 2. Update 5 Station Node classes
+      for (let i = 1; i <= 5; i++) {
+        const nodeEl = document.getElementById(`station${i}`);
+        nodeEl.classList.remove('active', 'passed', 'blocked');
+
+        if (i < stationNum) {
+          nodeEl.classList.add(data.stations[i].status === 'blocked' ? 'blocked' : 'passed');
+        } else if (i === stationNum) {
+          nodeEl.classList.add(isBlocked ? 'blocked' : 'active');
+        }
+      }
+
+      // 3. Update Left X-Ray Visual Chamber
+      document.getElementById('xrayStreamBadge').textContent = `STATION ${stationNum} OF 5`;
+      const laserEl = document.getElementById('chamberLaser');
+      laserEl.className = isBlocked ? 'chamber-laser alarm' : 'chamber-laser';
+
+      // Render tokens
+      const tokenDisplay = document.getElementById('xrayTokensDisplay');
+      tokenDisplay.innerHTML = '';
+      data.tokens.forEach((char, idx) => {
+        const span = document.createElement('span');
+        span.className = 'token-char';
+        span.textContent = char;
+
+        if (simMode === 'homoglyph' && idx === 9 && stationNum >= 3) {
+          span.className = 'token-char spoofed';
+          span.title = 'U+0430 Cyrillic Small Letter a';
+        } else if (stationNum >= 3 && stationData.status === 'pass') {
+          span.className = 'token-char safe-match';
+        }
+        tokenDisplay.appendChild(span);
+      });
+
+      // Render Meta Chips
+      const chipsDisplay = document.getElementById('xrayMetaChips');
+      chipsDisplay.innerHTML = '';
+      stationData.chips.forEach(chipText => {
+        const chip = document.createElement('span');
+        chip.className = 'meta-chip';
+        chip.textContent = chipText;
+        if (chipText.includes('BLOCKED') || chipText.includes('ALARM') || chipText.includes('BLOCK') || chipText.includes('Cyrillic') || chipText.includes('500.00')) {
+          chip.style.borderColor = 'rgba(244, 63, 94, 0.4)';
+          chip.style.color = '#fda4af';
+          chip.style.background = 'rgba(244, 63, 94, 0.15)';
+        }
+        chipsDisplay.appendChild(chip);
+      });
+
+      // 4. Update Right Plain-English Explainer
+      document.getElementById('explainerBadge').textContent = `STATION ${stationNum} · ${isBlocked ? 'THREAT DETECTED' : 'INSPECTION ACTIVE'}`;
+      document.getElementById('explainerBadge').style.color = isBlocked ? 'var(--rose)' : 'var(--cyan)';
+      document.getElementById('explainerTitle').textContent = stationData.title;
+      document.getElementById('explainerBody').textContent = stationData.body;
+      document.getElementById('explainerCallout').innerHTML = `<strong>Why this matters to you:</strong> ${stationData.callout}`;
+      if (isBlocked) {
+        document.getElementById('explainerCallout').style.borderLeftColor = 'var(--rose)';
+        document.getElementById('explainerCallout').style.background = 'rgba(244, 63, 94, 0.08)';
+      } else {
+        document.getElementById('explainerCallout').style.borderLeftColor = 'var(--cyan)';
+        document.getElementById('explainerCallout').style.background = 'rgba(0, 240, 255, 0.06)';
+      }
+
+      // 5. Update Telemetry numbers
+      document.getElementById('metricTime').textContent = stationData.time;
+      document.getElementById('metricMem').textContent = stationData.mem;
+    }
+
+    function jumpToStation(stationNum) {
+      renderSimStation(stationNum);
+    }
+
+    function stepSim(delta) {
+      let next = currentSimStation + delta;
+      if (next > 5) next = 1;
+      if (next < 1) next = 5;
+      renderSimStation(next);
+    }
+
+    function setSimMode(mode) {
+      simMode = mode;
+      document.querySelectorAll('.sim-mode-btn').forEach(b => b.classList.remove('active', 'mode-safe', 'mode-attack'));
+      
+      if (mode === 'safe') {
+        const btn = document.getElementById('modeBtnSafe');
+        btn.classList.add('active', 'mode-safe');
+      } else if (mode === 'homoglyph') {
+        const btn = document.getElementById('modeBtnHomoglyph');
+        btn.classList.add('active', 'mode-attack');
+      } else if (mode === 'drain') {
+        const btn = document.getElementById('modeBtnDrain');
+        btn.classList.add('active', 'mode-attack');
+      }
+      renderSimStation(1);
+    }
+
+    function toggleSimPlay() {
+      isSimPlaying = !isSimPlaying;
+      const btn = document.getElementById('simPlayBtn');
+      const icon = document.getElementById('simPlayIcon');
+      const text = document.getElementById('simPlayText');
+
+      if (isSimPlaying) {
+        icon.className = 'fa-solid fa-pause';
+        text.textContent = 'Pause';
+        btn.classList.remove('active');
+        startSimLoop();
+      } else {
+        icon.className = 'fa-solid fa-play';
+        text.textContent = 'Play';
+        btn.classList.add('active');
+        clearInterval(simTimer);
+      }
+    }
+
+    function restartSim() {
+      renderSimStation(1);
+    }
+
+    function startSimLoop() {
+      clearInterval(simTimer);
+      simTimer = setInterval(() => {
+        if (!isSimPlaying) return;
+        stepSim(1);
+      }, 3400);
+    }
+
+    // Start on Station 1
+    renderSimStation(1);
+    startSimLoop();
+
+    // =========================================================
+    // 4. SENTINEL STUDIO COCKPIT LOGIC
+    // =========================================================
     const SCENARIOS = {
       1: {
         agent: "AutonomousTradingAgent_v2",
         url: "https://paybox.sh/api/v1/checkout",
         network: "eip155:84532 · USDC (Base Sepolia)",
         amount: "1,000 atomic units ($0.001 USDC)",
+        latency: "38ms",
+        riskScore: 0,
         gates: [
           { status: "status-pass", text: "AIRGAPPED", icon: "fa-check" },
           { status: "status-pass", text: "MATCHED", icon: "fa-check" },
@@ -2276,6 +3368,8 @@
         url: "https://evilpaybox.sh/verify-wallet/reset-token-secret9999",
         network: "eip155:84532 · USDC (Base Sepolia)",
         amount: "1,000 atomic units ($0.001 USDC)",
+        latency: "44ms",
+        riskScore: 95,
         gates: [
           { status: "status-pass", text: "AIRGAPPED", icon: "fa-check" },
           { status: "status-fail", text: "IMPERSONATOR", icon: "fa-xmark" },
@@ -2302,6 +3396,8 @@
         url: "https://paybox.sh/api/v1/checkout",
         network: "eip155:84532 · USDC (Base Sepolia)",
         amount: "500,000,000 atomic units ($500.00 USDC)",
+        latency: "32ms",
+        riskScore: 100,
         gates: [
           { status: "status-pass", text: "AIRGAPPED", icon: "fa-check" },
           { status: "status-pass", text: "MATCHED", icon: "fa-check" },
@@ -2328,6 +3424,8 @@
         url: "https://shop.example/pay?key=sk_live_secret99887766&pass=supersecret",
         network: "eip155:84532 · USDC (Base Sepolia)",
         amount: "5,000 atomic units ($0.005 USDC)",
+        latency: "51ms",
+        riskScore: 65,
         gates: [
           { status: "status-pass", text: "AIRGAPPED", icon: "fa-check" },
           { status: "status-review", text: "UNVERIFIED", icon: "fa-circle-question" },
@@ -2356,37 +3454,71 @@
       if (btn) btn.classList.add('active');
 
       const s = SCENARIOS[num];
+      const laserBox = document.getElementById('urlLaserContainer');
+      laserBox.classList.add('scanning-active');
+
+      // Update text fields
       document.getElementById('scenarioAgent').textContent = s.agent;
       document.getElementById('scenarioUrl').textContent = s.url;
       document.getElementById('scenarioNetwork').textContent = s.network;
       document.getElementById('scenarioAmount').textContent = s.amount;
+      document.getElementById('pipelineLatencyTag').textContent = `LATENCY: ${s.latency}`;
 
-      // Update Gate Statuses
-      s.gates.forEach((g, i) => {
-        const el = document.getElementById(`gate${i + 1}Status`);
-        el.className = `gate-status-pill ${g.status}`;
-        el.innerHTML = `<i class="fa-solid ${g.icon}"></i> ${g.text}`;
+      // Sequential animated gate pulse
+      s.gates.forEach((g, idx) => {
+        const gateEl = document.getElementById(`gate${idx + 1}`);
+        const pillEl = document.getElementById(`gate${idx + 1}Status`);
+        gateEl.classList.remove('pulse-scan');
+
+        setTimeout(() => {
+          gateEl.classList.add('pulse-scan');
+          pillEl.className = `gate-status-pill ${g.status}`;
+          pillEl.innerHTML = `<i class="fa-solid ${g.icon}"></i> ${g.text}`;
+          setTimeout(() => gateEl.classList.remove('pulse-scan'), 350);
+        }, idx * 100);
       });
 
-      // Update Verdict Cockpit
-      const heroBox = document.getElementById('scenarioVerdictHero');
-      heroBox.className = `verdict-hero-box ${s.verdict.cls}`;
-      document.getElementById('scenarioVerdictIcon').innerHTML = `<i class="fa-solid ${s.verdict.icon}"></i>`;
-      const vText = document.getElementById('scenarioVerdictText');
-      vText.textContent = s.verdict.text;
-      vText.style.color = s.verdict.color;
-      document.getElementById('scenarioRiskText').textContent = s.verdict.risk;
-      document.getElementById('scenarioPlainDesc').textContent = s.verdict.plain;
+      // Update Verdict & Risk Bar after scan completes
+      setTimeout(() => {
+        laserBox.classList.remove('scanning-active');
 
-      // Guidance Box
-      const guideBox = document.getElementById('scenarioGuidance');
-      guideBox.style.background = s.verdict.guidance.bg;
-      guideBox.style.borderColor = s.verdict.guidance.border;
-      guideBox.style.color = s.verdict.guidance.color;
-      document.getElementById('scenarioGuidanceText').textContent = s.verdict.guidance.text;
+        const heroBox = document.getElementById('scenarioVerdictHero');
+        heroBox.className = `verdict-hero-box ${s.verdict.cls}`;
+        document.getElementById('scenarioVerdictIcon').innerHTML = `<i class="fa-solid ${s.verdict.icon}"></i>`;
+        const vText = document.getElementById('scenarioVerdictText');
+        vText.textContent = s.verdict.text;
+        vText.style.color = s.verdict.color;
+        document.getElementById('scenarioRiskText').textContent = s.verdict.risk;
+        document.getElementById('scenarioPlainDesc').textContent = s.verdict.plain;
+
+        // Animate Risk Score Meter
+        const fill = document.getElementById('riskMeterFill');
+        const scoreLabel = document.getElementById('riskScoreLabel');
+        fill.style.width = `${s.riskScore}%`;
+        fill.style.backgroundColor = s.riskScore > 75 ? 'var(--rose)' : (s.riskScore > 30 ? 'var(--amber)' : 'var(--emerald)');
+        scoreLabel.textContent = `${s.riskScore} / 100`;
+        scoreLabel.style.color = s.riskScore > 75 ? 'var(--rose)' : (s.riskScore > 30 ? 'var(--amber)' : 'var(--emerald)');
+
+        // Guidance Box
+        const guideBox = document.getElementById('scenarioGuidance');
+        guideBox.style.background = s.verdict.guidance.bg;
+        guideBox.style.borderColor = s.verdict.guidance.border;
+        guideBox.style.color = s.verdict.guidance.color;
+        document.getElementById('scenarioGuidanceText').textContent = s.verdict.guidance.text;
+      }, 450);
     }
 
-    // 3. Live Interactive Lab Scan
+    // 5. Interactive Tier Highlight
+    function highlightTier(card) {
+      document.querySelectorAll('.hierarchy-tier-card').forEach(c => c.style.borderColor = 'rgba(255, 255, 255, 0.08)');
+      card.style.borderColor = 'var(--cyan)';
+      card.style.boxShadow = '0 10px 40px rgba(0, 240, 255, 0.2)';
+      setTimeout(() => {
+        card.style.boxShadow = '';
+      }, 1500);
+    }
+
+    // 6. Live Interactive Lab Scan
     function setLabPreset(url, expectedDomain) {
       document.getElementById('labUrlInput').value = url;
       runLiveScan(expectedDomain);
@@ -2433,7 +3565,7 @@
       const color = isPass ? 'var(--emerald)' : (isBlock ? 'var(--rose)' : 'var(--amber)');
 
       resultBox.innerHTML = `
-        <div style="background: rgba(11, 15, 26, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 1.5rem;">
+        <div style="background: rgba(10, 15, 29, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 1.6rem; animation: pulseBorder 1.5s ease-out 1;">
           <div class="verdict-hero-box ${themeCls}" style="margin-bottom: 1.25rem;">
             <div class="verdict-circle-icon"><i class="fa-solid ${icon}"></i></div>
             <div class="verdict-main-text">
@@ -2443,11 +3575,11 @@
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
-            <div style="background: rgba(0,0,0,0.3); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+            <div style="background: rgba(0,0,0,0.35); padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
               <span style="font-size:0.7rem; color:var(--text-dim); text-transform:uppercase; font-weight:700;">Parsed Hostname</span>
               <div style="font-family:var(--font-mono); font-size:0.85rem; color:var(--cyan);">${data.hostname || 'None'}</div>
             </div>
-            <div style="background: rgba(0,0,0,0.3); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+            <div style="background: rgba(0,0,0,0.35); padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
               <span style="font-size:0.7rem; color:var(--text-dim); text-transform:uppercase; font-weight:700;">Privacy Sanitization</span>
               <div style="font-family:var(--font-mono); font-size:0.85rem; color:var(--emerald);">${data.privacy?.redactedForThreatIntel ? 'Queries & Secrets Redacted' : 'Clean (No Tokens Found)'}</div>
             </div>
@@ -2467,7 +3599,7 @@
       const isBad = url.includes('evil') || url.includes('xn--') || url.includes('attacker');
 
       resultBox.innerHTML = `
-        <div style="background: rgba(11, 15, 26, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 1.5rem;">
+        <div style="background: rgba(10, 15, 29, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 1.6rem;">
           <div class="verdict-hero-box ${isBad ? 'hero-block' : 'hero-pass'}" style="margin-bottom: 1.25rem;">
             <div class="verdict-circle-icon"><i class="fa-solid ${isBad ? 'fa-ban' : 'fa-circle-check'}"></i></div>
             <div class="verdict-main-text">
@@ -2483,7 +3615,7 @@
       `;
     }
 
-    // 4. FAQ Accordion Toggle
+    // 7. FAQ Accordion Toggle
     function toggleFaq(btn) {
       const item = btn.closest('.faq-item');
       item.classList.toggle('open');
