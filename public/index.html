@@ -7,7 +7,8 @@
   <meta name="description" content="Production-ready security gateway and x402 policy guard for AI agents on the PayBox Marketplace.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     :root {
       --bg-dark: #070a12;
@@ -26,7 +27,7 @@
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --text-dim: #64748b;
-      --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
     }
 
@@ -394,83 +395,278 @@
       box-shadow: none;
     }
 
-    /* Verdict Banner */
-    .verdict-banner {
-      border-radius: 12px;
-      padding: 1.25rem;
+    /* User-Friendly Verdict Hero Banner */
+    .verdict-hero {
+      border-radius: 16px;
+      padding: 1.5rem 1.75rem;
       margin-top: 1.5rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 1.25rem;
       animation: fadeIn 0.3s ease;
+      position: relative;
+      overflow: hidden;
     }
 
-    .verdict-banner.PASS {
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid var(--emerald);
+    .verdict-hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 6px;
+    }
+
+    .verdict-hero.PASS, .verdict-hero.EXPECTED_DOMAIN_MATCH, .verdict-hero.NO_KNOWN_THREAT {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.14) 0%, rgba(6, 78, 59, 0.25) 100%);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.15);
+    }
+    .verdict-hero.PASS::before, .verdict-hero.EXPECTED_DOMAIN_MATCH::before, .verdict-hero.NO_KNOWN_THREAT::before {
+      background: var(--emerald);
+    }
+
+    .verdict-hero.REVIEW, .verdict-hero.CAUTION, .verdict-hero.UNVERIFIED {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.14) 0%, rgba(120, 53, 15, 0.25) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.15);
+    }
+    .verdict-hero.REVIEW::before, .verdict-hero.CAUTION::before, .verdict-hero.UNVERIFIED::before {
+      background: var(--amber);
+    }
+
+    .verdict-hero.BLOCK, .verdict-hero.SUSPICIOUS, .verdict-hero.KNOWN_MALICIOUS {
+      background: linear-gradient(135deg, rgba(244, 63, 94, 0.16) 0%, rgba(136, 19, 55, 0.3) 100%);
+      border: 1px solid rgba(244, 63, 94, 0.45);
+      box-shadow: 0 0 25px rgba(244, 63, 94, 0.2);
+    }
+    .verdict-hero.BLOCK::before, .verdict-hero.SUSPICIOUS::before, .verdict-hero.KNOWN_MALICIOUS::before {
+      background: var(--rose);
+    }
+
+    .verdict-icon-box {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      flex-shrink: 0;
+    }
+
+    .verdict-hero.PASS .verdict-icon-box, .verdict-hero.EXPECTED_DOMAIN_MATCH .verdict-icon-box, .verdict-hero.NO_KNOWN_THREAT .verdict-icon-box {
+      background: rgba(16, 185, 129, 0.2);
       color: var(--emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
     }
 
-    .verdict-banner.REVIEW {
-      background: rgba(245, 158, 11, 0.12);
-      border: 1px solid var(--amber);
+    .verdict-hero.REVIEW .verdict-icon-box, .verdict-hero.CAUTION .verdict-icon-box, .verdict-hero.UNVERIFIED .verdict-icon-box {
+      background: rgba(245, 158, 11, 0.2);
       color: var(--amber);
+      border: 1px solid rgba(245, 158, 11, 0.3);
     }
 
-    .verdict-banner.BLOCK, .verdict-banner.SUSPICIOUS {
-      background: rgba(244, 63, 94, 0.12);
-      border: 1px solid var(--rose);
+    .verdict-hero.BLOCK .verdict-icon-box, .verdict-hero.SUSPICIOUS .verdict-icon-box, .verdict-hero.KNOWN_MALICIOUS .verdict-icon-box {
+      background: rgba(244, 63, 94, 0.2);
       color: var(--rose);
+      border: 1px solid rgba(244, 63, 94, 0.3);
     }
 
-    .verdict-banner.UNVERIFIED {
-      background: rgba(129, 140, 248, 0.12);
-      border: 1px solid var(--violet);
-      color: var(--violet);
-    }
-
-    .verdict-status {
-      font-size: 1.4rem;
+    .verdict-title {
+      font-size: 1.35rem;
       font-weight: 800;
       letter-spacing: -0.01em;
+      color: #ffffff;
       display: flex;
       align-items: center;
       gap: 0.6rem;
     }
 
-    /* Result checks chips */
+    .verdict-plain-summary {
+      font-size: 0.925rem;
+      color: var(--text-main);
+      margin-top: 0.35rem;
+      line-height: 1.45;
+    }
+
+    .verdict-risk-tag {
+      padding: 0.4rem 0.9rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      white-space: nowrap;
+    }
+
+    .verdict-risk-tag.low {
+      background: rgba(16, 185, 129, 0.18);
+      color: var(--emerald);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .verdict-risk-tag.medium {
+      background: rgba(245, 158, 11, 0.18);
+      color: var(--amber);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .verdict-risk-tag.high, .verdict-risk-tag.critical {
+      background: rgba(244, 63, 94, 0.2);
+      color: var(--rose);
+      border: 1px solid rgba(244, 63, 94, 0.45);
+    }
+
+    /* Action Recommendation Banner */
+    .action-guidance-card {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1.15rem 1.4rem;
+      margin-top: 1rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .action-guidance-icon {
+      font-size: 1.25rem;
+      color: var(--cyan);
+      margin-top: 0.15rem;
+    }
+
+    .action-guidance-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--cyan);
+      margin-bottom: 0.25rem;
+    }
+
+    .action-guidance-text {
+      font-size: 0.9rem;
+      color: var(--text-main);
+      line-height: 1.5;
+    }
+
+    /* Human-Friendly Check Cards */
+    .checks-section-heading {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
     .check-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 0.75rem;
-      margin-top: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 0.85rem;
     }
 
-    .check-chip {
-      background: rgba(3, 7, 18, 0.6);
+    .check-card {
+      background: rgba(15, 23, 42, 0.85);
       border: 1px solid var(--border-subtle);
-      border-radius: 10px;
-      padding: 0.85rem;
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      position: relative;
     }
 
-    .check-chip.pass { border-left: 3px solid var(--emerald); }
-    .check-chip.fail { border-left: 3px solid var(--rose); }
-    .check-chip.warn { border-left: 3px solid var(--amber); }
+    .check-card:hover {
+      border-color: rgba(255, 255, 255, 0.18);
+      background: rgba(20, 30, 55, 0.9);
+      transform: translateY(-1px);
+    }
 
-    .check-id {
-      font-size: 0.75rem;
-      font-family: var(--font-mono);
+    .check-card.pass { border-left: 4px solid var(--emerald); }
+    .check-card.fail { border-left: 4px solid var(--rose); }
+    .check-card.warn { border-left: 4px solid var(--amber); }
+
+    .check-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .check-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .check-status-icon {
+      font-size: 1rem;
+    }
+    .check-card.pass .check-status-icon { color: var(--emerald); }
+    .check-card.fail .check-status-icon { color: var(--rose); }
+    .check-card.warn .check-status-icon { color: var(--amber); }
+
+    .check-friendly-name {
       font-weight: 700;
-      color: var(--text-muted);
+      font-size: 0.925rem;
+      color: #ffffff;
     }
 
-    .check-detail {
+    .check-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .check-card.pass .check-badge {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .check-card.fail .check-badge {
+      background: rgba(244, 63, 94, 0.15);
+      color: var(--rose);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+    .check-card.warn .check-badge {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--amber);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .check-explain {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+
+    .check-detail-box {
       font-size: 0.85rem;
       color: var(--text-main);
+      background: rgba(3, 7, 18, 0.6);
+      border-radius: 8px;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid rgba(255, 255, 255, 0.04);
       line-height: 1.4;
+    }
+
+    .check-tech-id {
+      font-size: 0.675rem;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      margin-top: 0.15rem;
     }
 
     /* Code & JSON Previews */
@@ -561,7 +757,7 @@
   <!-- Header -->
   <header>
     <a href="/" class="brand">
-      <div class="logo-badge">🛡️</div>
+      <div class="logo-badge"><i class="fa-solid fa-shield-halved"></i></div>
       <div>
         <div class="brand-title">PayGuard</div>
       </div>
@@ -571,10 +767,10 @@
     <div class="header-pills">
       <div class="live-status">
         <div class="pulse-dot"></div>
-        <span id="service-status-text">Active • Read-Only Mode</span>
+        <span id="service-status-text"><i class="fa-solid fa-circle-check" style="margin-right: 0.25rem;"></i> Active • Read-Only Mode</span>
       </div>
-      <div class="pill-secondary">Base Sepolia (84532)</div>
-      <div class="pill-secondary">x402 Protocol v2</div>
+      <div class="pill-secondary"><i class="fa-solid fa-cubes" style="color: var(--cyan); margin-right: 0.35rem;"></i> Base Sepolia (84532)</div>
+      <div class="pill-secondary"><i class="fa-solid fa-bolt" style="color: var(--amber); margin-right: 0.35rem;"></i> x402 Protocol v2</div>
     </div>
   </header>
 
@@ -582,19 +778,19 @@
     <!-- Navigation Tabs -->
     <nav class="tab-nav">
       <button class="tab-btn active" onclick="switchTab('overview')">
-        <span>📊</span> Telemetry & Health
+        <i class="fa-solid fa-chart-line"></i> Telemetry & Health
       </button>
       <button class="tab-btn" onclick="switchTab('url-sentinel')">
-        <span>🔍</span> URL Sentinel
+        <i class="fa-solid fa-magnifying-glass-chart"></i> URL Sentinel
       </button>
       <button class="tab-btn" onclick="switchTab('payment-guard')">
-        <span>💳</span> Payment Guard
+        <i class="fa-solid fa-vault"></i> Payment Guard
       </button>
       <button class="tab-btn" onclick="switchTab('threat-report')">
-        <span>📋</span> Threat Reports
+        <i class="fa-solid fa-file-shield"></i> Threat Reports
       </button>
       <button class="tab-btn" onclick="switchTab('bazaar')">
-        <span>🌐</span> x402 Bazaar Catalog
+        <i class="fa-solid fa-store"></i> x402 Bazaar Catalog
       </button>
     </nav>
 
@@ -602,50 +798,62 @@
     <section id="tab-overview" class="tab-content active">
       <div class="metric-grid">
         <div class="metric-card">
-          <div class="metric-label">API Health</div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="metric-label">API Health</div>
+            <i class="fa-solid fa-heart-pulse" style="color: var(--emerald); font-size: 1rem;"></i>
+          </div>
           <div class="metric-value" id="stat-health" style="color: var(--emerald);">200 OK</div>
-          <div class="metric-sub"><span>●</span> Advisory Read-Only</div>
+          <div class="metric-sub"><i class="fa-solid fa-circle-check"></i> Advisory Read-Only</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Total Requests</div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="metric-label">Total Requests</div>
+            <i class="fa-solid fa-arrow-trend-up" style="color: var(--cyan); font-size: 1rem;"></i>
+          </div>
           <div class="metric-value" id="stat-requests">0</div>
-          <div class="metric-sub"><span>▲</span> Live HTTP Telemetry</div>
+          <div class="metric-sub"><i class="fa-solid fa-chart-simple"></i> Live HTTP Telemetry</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">In-Flight Scans</div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="metric-label">In-Flight Scans</div>
+            <i class="fa-solid fa-wave-square" style="color: var(--violet); font-size: 1rem;"></i>
+          </div>
           <div class="metric-value" id="stat-inflight">0</div>
-          <div class="metric-sub">Max Ceiling: 100</div>
+          <div class="metric-sub"><i class="fa-solid fa-gauge"></i> Max Ceiling: 100</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Uptime</div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="metric-label">Uptime</div>
+            <i class="fa-solid fa-clock" style="color: var(--amber); font-size: 1rem;"></i>
+          </div>
           <div class="metric-value" id="stat-uptime">0s</div>
-          <div class="metric-sub">Zero memory leaks</div>
+          <div class="metric-sub"><i class="fa-solid fa-shield"></i> Zero memory leaks</div>
         </div>
       </div>
 
       <div class="glass-card">
         <div class="card-header">
           <div>
-            <div class="card-title">🛡️ Security Perimeter & Non-Negotiable Guarantees</div>
+            <div class="card-title"><i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> Security Perimeter & Non-Negotiable Guarantees</div>
             <div class="card-subtitle">Enforced architectural safety constraints for autonomous agents and user wallets</div>
           </div>
         </div>
 
         <div class="guarantee-grid">
           <div class="guarantee-card">
-            <h4>🔐 Zero Credential Access</h4>
+            <h4><i class="fa-solid fa-key" style="color: var(--cyan);"></i> Zero Credential Access</h4>
             <p>PayGuard never requests, stores, or handles wallet private keys, seed phrases, card details, or bearer passwords.</p>
           </div>
           <div class="guarantee-card">
-            <h4>🚫 Anti-SSRF In-Memory Parsing</h4>
+            <h4><i class="fa-solid fa-shield-virus" style="color: var(--emerald);"></i> Anti-SSRF In-Memory Parsing</h4>
             <p>Target URLs are parsed strictly locally via standard URL parsers. PayGuard never opens, fetches, or triggers remote resources.</p>
           </div>
           <div class="guarantee-card">
-            <h4>🛡️ Sensitive-Path Redaction</h4>
+            <h4><i class="fa-solid fa-user-secret" style="color: var(--amber);"></i> Sensitive-Path Redaction</h4>
             <p>High-entropy tokens, reset hashes, invite codes, and query credentials are automatically scrubbed before any external lookup.</p>
           </div>
           <div class="guarantee-card">
-            <h4>⚖️ Advisory Integrity Verdicts</h4>
+            <h4><i class="fa-solid fa-scale-balanced" style="color: var(--violet);"></i> Advisory Integrity Verdicts</h4>
             <p>PASS signals conformance between offered requirements and user policies; decisions are advisory and never execute payments.</p>
           </div>
         </div>
@@ -657,50 +865,70 @@
       <div class="glass-card">
         <div class="card-header">
           <div>
-            <div class="card-title">🔍 URL Sentinel Phishing & Impersonation Inspector</div>
+            <div class="card-title"><i class="fa-solid fa-magnifying-glass-chart" style="color: var(--cyan);"></i> URL Sentinel Phishing & Impersonation Inspector</div>
             <div class="card-subtitle">Examines target URLs for Unicode homoglyphs, lookalikes, brand impersonation, and suffix attacks.</div>
           </div>
         </div>
 
         <!-- Presets bar -->
         <div class="preset-bar">
-          <span class="preset-label">Test Vectors:</span>
-          <button class="preset-chip" onclick="setUrlPreset('https://paybox.sh/checkout', 'paybox.sh')">Official PayBox Domain</button>
-          <button class="preset-chip" onclick="setUrlPreset('https://pаybox.sh/verify', 'paybox.sh')">Cyrillic Homoglyph Lookalike</button>
-          <button class="preset-chip" onclick="setUrlPreset('https://evil-paybox.sh.attacker.com/session', 'paybox.sh')">Trusted Suffix Attack</button>
-          <button class="preset-chip" onclick="setUrlPreset('https://wallet-login.example.com/reset?token=SECRET_TOKEN_999', 'example.com')">Credential Leak in URL</button>
-          <button class="preset-chip" onclick="setUrlPreset('http://bit.ly/paybox-claim', 'paybox.sh')">Insecure HTTP & Shortener</button>
+          <span class="preset-label"><i class="fa-solid fa-flask" style="color: var(--cyan); margin-right: 0.25rem;"></i> Test Scenarios:</span>
+          <button class="preset-chip" onclick="setUrlPreset('https://paybox.sh/checkout', 'paybox.sh')"><i class="fa-solid fa-circle-check" style="color: var(--emerald);"></i> Official PayBox Domain</button>
+          <button class="preset-chip" onclick="setUrlPreset('https://pаybox.sh/verify', 'paybox.sh')"><i class="fa-solid fa-mask" style="color: var(--rose);"></i> Cyrillic Lookalike Attack</button>
+          <button class="preset-chip" onclick="setUrlPreset('https://evil-paybox.sh.attacker.com/session', 'paybox.sh')"><i class="fa-solid fa-spider" style="color: var(--rose);"></i> Deceptive Suffix Attack</button>
+          <button class="preset-chip" onclick="setUrlPreset('https://wallet-login.example.com/reset?token=SECRET_TOKEN_999', 'example.com')"><i class="fa-solid fa-key" style="color: var(--amber);"></i> Credential Leak in URL</button>
+          <button class="preset-chip" onclick="setUrlPreset('http://bit.ly/paybox-claim', 'paybox.sh')"><i class="fa-solid fa-lock-open" style="color: var(--amber);"></i> Insecure HTTP Link</button>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="sentinel-url">Target URL to Inspect</label>
+          <label class="form-label" for="sentinel-url"><span><i class="fa-solid fa-link" style="color: var(--cyan); margin-right: 0.35rem;"></i> Target Web Address (URL) to Inspect</span></label>
           <input type="text" id="sentinel-url" class="input-box" placeholder="https://secure-checkout.example/session" value="https://paybox.sh/checkout">
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="sentinel-domain">Expected Independent Domain (Optional Allowlist)</label>
+          <label class="form-label" for="sentinel-domain"><span><i class="fa-solid fa-globe" style="color: var(--violet); margin-right: 0.35rem;"></i> Expected Merchant Domain (Optional Allowlist)</span></label>
           <input type="text" id="sentinel-domain" class="input-box" placeholder="paybox.sh" value="paybox.sh">
         </div>
 
-        <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1rem;">
+        <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1rem; flex-wrap: wrap;">
           <button class="btn" id="btn-scan-url" onclick="runUrlSentinel()">
-            <span>⚡</span> Run URL Security Scan
+            <i class="fa-solid fa-bolt"></i> Run URL Security Scan
           </button>
           <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-muted); cursor: pointer;">
-            <input type="checkbox" id="sentinel-reputation"> Check Google Web Risk (if configured)
+            <input type="checkbox" id="sentinel-reputation"> <i class="fa-solid fa-cloud-arrow-down" style="color: var(--cyan);"></i> Check Google Web Risk Threat Intelligence (if configured)
           </label>
         </div>
 
         <!-- Sentinel Verdict Output -->
         <div id="sentinel-verdict-container" style="display: none;">
-          <div id="sentinel-verdict-banner" class="verdict-banner">
-            <div>
-              <div class="verdict-status" id="sentinel-verdict-title">PASS</div>
-              <div id="sentinel-verdict-summary" style="font-size: 0.9rem; margin-top: 0.35rem; color: var(--text-main);">Summary description</div>
+          <div id="sentinel-verdict-hero" class="verdict-hero PASS">
+            <div style="display: flex; align-items: center; gap: 1.25rem;">
+              <div class="verdict-icon-box" id="sentinel-icon-box">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+              <div>
+                <div class="verdict-title" id="sentinel-verdict-title">Domain is Safe & Genuine</div>
+                <div class="verdict-plain-summary" id="sentinel-verdict-summary">No homoglyphs, brand spoofing, or deceptive suffixes detected.</div>
+              </div>
             </div>
-            <div id="sentinel-risk-badge" class="pill-secondary" style="font-weight: 700;">LOW RISK</div>
+            <div id="sentinel-risk-badge" class="verdict-risk-tag low">
+              <i class="fa-solid fa-shield"></i> Low Risk
+            </div>
           </div>
 
+          <!-- Action Guidance Box -->
+          <div class="action-guidance-card" id="sentinel-guidance-box">
+            <i class="fa-solid fa-circle-info action-guidance-icon"></i>
+            <div>
+              <div class="action-guidance-title">What should you do?</div>
+              <div class="action-guidance-text" id="sentinel-action-text">This link appears genuine. However, always confirm payment details and never share private keys or seed phrases on any website.</div>
+            </div>
+          </div>
+
+          <!-- Human-friendly Checks Breakdown -->
+          <div class="checks-section-heading">
+            <i class="fa-solid fa-list-check" style="color: var(--cyan);"></i> Security Checks Breakdown
+          </div>
           <div class="check-grid" id="sentinel-checks-grid"></div>
         </div>
       </div>
@@ -711,41 +939,63 @@
       <div class="glass-card">
         <div class="card-header">
           <div>
-            <div class="card-title">💳 Payment Guard Intent Policy Studio</div>
+            <div class="card-title"><i class="fa-solid fa-vault" style="color: var(--cyan);"></i> Payment Guard Intent Policy Studio</div>
             <div class="card-subtitle">Verify x402 payment requirements against an explicit caller-defined policy before paying.</div>
           </div>
         </div>
 
         <div class="preset-bar">
-          <span class="preset-label">Test Vectors:</span>
-          <button class="preset-chip" onclick="setPaymentPreset('pass')">Valid Policy Match (PASS)</button>
-          <button class="preset-chip" onclick="setPaymentPreset('excessive')">Excessive Amount (BLOCK)</button>
-          <button class="preset-chip" onclick="setPaymentPreset('recipient')">Attacker Recipient Substitution (BLOCK)</button>
-          <button class="preset-chip" onclick="setPaymentPreset('network')">Network Mismatch (BLOCK)</button>
-          <button class="preset-chip" onclick="setPaymentPreset('review')">Incomplete Policy (REVIEW)</button>
+          <span class="preset-label"><i class="fa-solid fa-flask" style="color: var(--cyan); margin-right: 0.25rem;"></i> Test Scenarios:</span>
+          <button class="preset-chip" onclick="setPaymentPreset('pass')"><i class="fa-solid fa-circle-check" style="color: var(--emerald);"></i> Authorized Checkout (PASS)</button>
+          <button class="preset-chip" onclick="setPaymentPreset('excessive')"><i class="fa-solid fa-hand-holding-dollar" style="color: var(--rose);"></i> Excessive Amount Drain (BLOCK)</button>
+          <button class="preset-chip" onclick="setPaymentPreset('recipient')"><i class="fa-solid fa-user-ninja" style="color: var(--rose);"></i> Recipient Swapped by Attacker (BLOCK)</button>
+          <button class="preset-chip" onclick="setPaymentPreset('network')"><i class="fa-solid fa-network-wired" style="color: var(--rose);"></i> Chain Mismatch Scam (BLOCK)</button>
+          <button class="preset-chip" onclick="setPaymentPreset('review')"><i class="fa-solid fa-clipboard-question" style="color: var(--amber);"></i> Incomplete Policy Rules (REVIEW)</button>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
           <div class="form-group">
-            <label class="form-label">User Trusted Policy (Intent)</label>
+            <label class="form-label"><span><i class="fa-solid fa-user-shield" style="color: var(--emerald); margin-right: 0.35rem;"></i> User Trusted Policy (Intent)</span></label>
             <textarea id="policy-intent-input" class="input-box"></textarea>
           </div>
           <div class="form-group">
-            <label class="form-label">Offered x402 Payment Requirements</label>
+            <label class="form-label"><span><i class="fa-solid fa-receipt" style="color: var(--cyan); margin-right: 0.35rem;"></i> Offered x402 Payment Requirements</span></label>
             <textarea id="policy-reqs-input" class="input-box"></textarea>
           </div>
         </div>
 
         <button class="btn" onclick="runPaymentGuard()">
-          <span>⚖️</span> Compare Intent Against Requirements
+          <i class="fa-solid fa-scale-balanced"></i> Compare Intent Against Requirements
         </button>
 
         <div id="payment-verdict-container" style="display: none;">
-          <div id="payment-verdict-banner" class="verdict-banner">
-            <div>
-              <div class="verdict-status" id="payment-verdict-title">PASS</div>
-              <div id="payment-verdict-summary" style="font-size: 0.9rem; margin-top: 0.35rem; color: var(--text-main);">Summary description</div>
+          <div id="payment-verdict-hero" class="verdict-hero PASS">
+            <div style="display: flex; align-items: center; gap: 1.25rem;">
+              <div class="verdict-icon-box" id="payment-icon-box">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+              <div>
+                <div class="verdict-title" id="payment-verdict-title">Payment Approved by Policy</div>
+                <div class="verdict-plain-summary" id="payment-verdict-summary">All requirements comply with your trusted safety constraints.</div>
+              </div>
             </div>
+            <div id="payment-status-badge" class="verdict-risk-tag low">
+              <i class="fa-solid fa-check"></i> PASS
+            </div>
+          </div>
+
+          <!-- Payment Action Guidance Box -->
+          <div class="action-guidance-card" id="payment-guidance-box">
+            <i class="fa-solid fa-circle-info action-guidance-icon"></i>
+            <div>
+              <div class="action-guidance-title">Policy Assessment</div>
+              <div class="action-guidance-text" id="payment-action-text">The payment request matches your authorized merchant address, budget, and network.</div>
+            </div>
+          </div>
+
+          <!-- Breakdown Checks -->
+          <div class="checks-section-heading">
+            <i class="fa-solid fa-shield-halved" style="color: var(--cyan);"></i> Policy Rules Verified
           </div>
           <div class="check-grid" id="payment-checks-grid"></div>
         </div>
@@ -757,25 +1007,25 @@
       <div class="glass-card">
         <div class="card-header">
           <div>
-            <div class="card-title">📋 Privacy-Conscious Threat Report Generator</div>
+            <div class="card-title"><i class="fa-solid fa-file-shield" style="color: var(--cyan);"></i> Privacy-Conscious Threat Report Generator</div>
             <div class="card-subtitle">Produces audited draft threat reports with guaranteed secret and credential token redaction.</div>
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Suspicious Target URL</label>
+          <label class="form-label"><span><i class="fa-solid fa-triangle-exclamation" style="color: var(--amber); margin-right: 0.35rem;"></i> Suspicious Target URL</span></label>
           <input type="text" id="report-url" class="input-box" value="https://malicious-paybox-claim.example/login?token=SUPER_SECRET_REDACT_ME">
         </div>
 
         <button class="btn" onclick="generateThreatReport()">
-          <span>📝</span> Generate Redacted Draft Report
+          <i class="fa-solid fa-file-export"></i> Generate Redacted Draft Report
         </button>
 
         <div id="threat-report-container" style="display: none; margin-top: 1.5rem;">
           <div class="card-header" style="margin-bottom: 0.75rem;">
-            <div style="font-weight: 700; color: var(--cyan); font-size: 0.95rem;">Draft Threat Report Preview (Non-Custodial)</div>
+            <div style="font-weight: 700; color: var(--cyan); font-size: 0.95rem;"><i class="fa-solid fa-code" style="margin-right: 0.35rem;"></i> Draft Threat Report Preview (Non-Custodial)</div>
             <button class="btn btn-secondary" onclick="copyReportJson()" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-              📋 Copy Raw JSON
+              <i class="fa-regular fa-copy"></i> Copy Raw JSON
             </button>
           </div>
           <pre class="code-preview" id="report-json-preview"></pre>
@@ -788,24 +1038,24 @@
       <div class="glass-card">
         <div class="card-header">
           <div>
-            <div class="card-title">🌐 Autonomous Agent Bazaar Service Catalog</div>
+            <div class="card-title"><i class="fa-solid fa-store" style="color: var(--cyan);"></i> Autonomous Agent Bazaar Service Catalog</div>
             <div class="card-subtitle">Standard Draft 2020-12 x402 discovery metadata for AI agents and marketplace bots.</div>
           </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
           <div>
-            <div style="font-weight: 700; margin-bottom: 0.75rem; color: #ffffff;">Discovered Security Endpoints</div>
+            <div style="font-weight: 700; margin-bottom: 0.75rem; color: #ffffff;"><i class="fa-solid fa-cube" style="color: var(--cyan); margin-right: 0.35rem;"></i> Discovered Security Endpoints</div>
             <div id="bazaar-endpoints-list" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
           </div>
           <div>
-            <div style="font-weight: 700; margin-bottom: 0.75rem; color: #ffffff;">HTTP 402 Challenge Simulator</div>
+            <div style="font-weight: 700; margin-bottom: 0.75rem; color: #ffffff;"><i class="fa-solid fa-terminal" style="color: var(--violet); margin-right: 0.35rem;"></i> HTTP 402 Challenge Simulator</div>
             <div class="form-group">
               <label class="form-label">Protected Resource URL</label>
               <input type="text" id="bazaar-resource-url" class="input-box" value="https://api.payguard.example/api/analyze-url">
             </div>
             <button class="btn btn-secondary" onclick="simulate402Challenge()" style="margin-bottom: 1rem;">
-              Simulate 402 Challenge Response
+              <i class="fa-solid fa-play"></i> Simulate 402 Challenge Response
             </button>
             <pre class="code-preview" id="bazaar-challenge-output" style="max-height: 250px;"></pre>
           </div>
@@ -816,12 +1066,12 @@
 
   <!-- Footer -->
   <footer>
-    <div>PayGuard v0.1.0 • Built for the PayBox Agent Marketplace • Zero External Runtime Dependencies</div>
+    <div><i class="fa-solid fa-shield-halved" style="color: var(--cyan); margin-right: 0.35rem;"></i> PayGuard v0.1.0 • Built for the PayBox Agent Marketplace • Zero External Runtime Dependencies</div>
     <div class="footer-links">
-      <a href="/health" target="_blank">/health</a>
-      <a href="/metrics" target="_blank">/metrics</a>
-      <a href="/.well-known/x402-bazaar.json" target="_blank">Bazaar Metadata</a>
-      <a href="https://github.com/technea/PayGuard." target="_blank">GitHub Repo</a>
+      <a href="/health" target="_blank"><i class="fa-solid fa-heart-pulse"></i> /health</a>
+      <a href="/metrics" target="_blank"><i class="fa-solid fa-chart-line"></i> /metrics</a>
+      <a href="/.well-known/x402-bazaar.json" target="_blank"><i class="fa-solid fa-store"></i> Bazaar Metadata</a>
+      <a href="https://github.com/technea/PayGuard." target="_blank"><i class="fa-brands fa-github"></i> GitHub Repo</a>
     </div>
   </footer>
 
@@ -889,7 +1139,7 @@
       const checkReputation = document.getElementById('sentinel-reputation').checked;
 
       const btn = document.getElementById('btn-scan-url');
-      btn.textContent = '⏳ Scanning...';
+      btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Scanning Security Vector...';
       btn.disabled = true;
 
       try {
@@ -903,33 +1153,148 @@
       } catch (err) {
         alert('Scan request failed: ' + err.message);
       } finally {
-        btn.innerHTML = '<span>⚡</span> Run URL Security Scan';
+        btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Run URL Security Scan';
         btn.disabled = false;
         updateTelemetry();
       }
     }
 
+    // Human-friendly dictionary for URL security checks
+    const URL_CHECK_INFO = {
+      idn_homoglyph: {
+        title: "Lookalike Character Phishing (Homoglyph)",
+        explain: "Scans for deceptive foreign or Cyrillic letters that look identical to normal letters (e.g. 'а' vs 'a') used to impersonate official websites.",
+        icon: "fa-solid fa-mask"
+      },
+      brand_impersonation: {
+        title: "Brand Impersonation & Fake Subdomain Check",
+        explain: "Detects spoofed brand names embedded in attacker subdomains (e.g. 'paybox.sh.attacker.com').",
+        icon: "fa-solid fa-shield-virus"
+      },
+      unencrypted_http: {
+        title: "HTTPS Connection Encryption",
+        explain: "Verifies the website uses modern SSL/TLS encryption. Insecure plain HTTP links expose your activity to eavesdropping.",
+        icon: "fa-solid fa-lock"
+      },
+      embedded_credentials: {
+        title: "Hidden Credentials in Web Link",
+        explain: "Checks whether usernames or passwords were embedded before the web domain to mislead your browser.",
+        icon: "fa-solid fa-key"
+      },
+      non_standard_port: {
+        title: "Standard Web Port Protocol",
+        explain: "Verifies the web link uses legitimate HTTP/HTTPS ports (80/443) rather than obscure, non-standard server ports.",
+        icon: "fa-solid fa-network-wired"
+      },
+      ip_address_host: {
+        title: "Registered Domain vs Raw Server IP",
+        explain: "Ensures the link uses a registered company domain instead of an anonymous numerical IP address.",
+        icon: "fa-solid fa-server"
+      },
+      suspicious_keywords: {
+        title: "Phishing & Credential Harvester Keywords",
+        explain: "Scans for scam words like 'claim-airdrop', 'seed-verify', or 'urgent-login' commonly used in crypto theft.",
+        icon: "fa-solid fa-triangle-exclamation"
+      },
+      high_entropy_path: {
+        title: "Sensitive Token & Password Redaction",
+        explain: "Scans for sensitive access tokens or reset secrets and ensures they are safely redacted before analysis.",
+        icon: "fa-solid fa-user-secret"
+      },
+      expected_domain_match: {
+        title: "Official Merchant Allowlist Match",
+        explain: "Confirmed that the destination web address matches your authorized merchant domain allowlist.",
+        icon: "fa-solid fa-circle-check"
+      },
+      expected_domain_mismatch: {
+        title: "Domain Allowlist Deviation",
+        explain: "The link destination differs from the expected independent merchant domain you provided.",
+        icon: "fa-solid fa-circle-xmark"
+      },
+      web_risk_reputation: {
+        title: "Google Web Risk Threat Intelligence",
+        explain: "Queries Google's global threat database for active malware, social engineering, or phishing records.",
+        icon: "fa-solid fa-cloud-arrow-down"
+      },
+      url_syntax: {
+        title: "Web Address Syntax & Protocol Integrity",
+        explain: "Validates safe standard web address formatting without dangerous control characters.",
+        icon: "fa-solid fa-code"
+      },
+      input: {
+        title: "Input Validation",
+        explain: "Ensures the submitted URL meets length and formatting specifications.",
+        icon: "fa-solid fa-circle-info"
+      }
+    };
+
     function renderSentinelResult(data) {
       const container = document.getElementById('sentinel-verdict-container');
-      const banner = document.getElementById('sentinel-verdict-banner');
+      const hero = document.getElementById('sentinel-verdict-hero');
+      const iconBox = document.getElementById('sentinel-icon-box');
       const title = document.getElementById('sentinel-verdict-title');
       const summary = document.getElementById('sentinel-verdict-summary');
       const riskBadge = document.getElementById('sentinel-risk-badge');
+      const guidance = document.getElementById('sentinel-action-text');
       const grid = document.getElementById('sentinel-checks-grid');
 
       container.style.display = 'block';
       const verdict = data.verdict || 'UNVERIFIED';
-      banner.className = 'verdict-banner ' + (verdict === 'EXPECTED_DOMAIN_MATCH' ? 'PASS' : verdict);
-      title.textContent = verdict.replace(/_/g, ' ');
-      summary.textContent = data.summary || 'Security assessment completed.';
-      riskBadge.textContent = 'RISK: ' + (data.riskLevel || 'UNKNOWN');
 
-      grid.innerHTML = (data.checks || []).map(c => `
-        <div class="check-chip ${c.status === 'pass' ? 'pass' : c.status === 'fail' ? 'fail' : 'warn'}">
-          <div class="check-id">${c.id}</div>
-          <div class="check-detail">${c.detail}</div>
-        </div>
-      `).join('');
+      // Clear previous classes
+      hero.className = 'verdict-hero';
+
+      if (verdict === 'EXPECTED_DOMAIN_MATCH' || verdict === 'NO_KNOWN_THREAT') {
+        hero.classList.add('PASS');
+        iconBox.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+        title.innerHTML = 'Safe: Trusted Domain Verified';
+        riskBadge.className = 'verdict-risk-tag low';
+        riskBadge.innerHTML = '<i class="fa-solid fa-shield"></i> Low Risk';
+        guidance.textContent = 'This website matches your trusted domain expectations and passed all local spoofing heuristics. Safe to proceed.';
+      } else if (verdict === 'UNVERIFIED' || verdict === 'CAUTION') {
+        hero.classList.add(verdict);
+        iconBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+        title.innerHTML = verdict === 'CAUTION' ? 'Caution: Warning Signs Detected' : 'Unverified Domain (Proceed Carefully)';
+        riskBadge.className = 'verdict-risk-tag medium';
+        riskBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Medium Risk';
+        guidance.textContent = data.recommendation || 'Confirm the merchant domain independently. Never enter wallet recovery phrases or private keys on any web page.';
+      } else {
+        hero.classList.add('BLOCK');
+        iconBox.innerHTML = '<i class="fa-solid fa-shield-xmark"></i>';
+        title.innerHTML = verdict === 'KNOWN_MALICIOUS' ? 'CRITICAL DANGER: Known Threat Detected!' : 'High Risk: Phishing / Spoofing Suspected!';
+        riskBadge.className = 'verdict-risk-tag high';
+        riskBadge.innerHTML = '<i class="fa-solid fa-ban"></i> High Threat';
+        guidance.textContent = 'DO NOT PROCEED. Do not open this link, connect your crypto wallet, or approve any transaction. This link shows phishing or impersonation signals.';
+      }
+
+      summary.textContent = data.summary || 'Security assessment completed.';
+
+      // Render human-friendly checks
+      grid.innerHTML = (data.checks || []).map(c => {
+        const meta = URL_CHECK_INFO[c.id] || {
+          title: c.id.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          explain: "Security parameter inspected by PayGuard.",
+          icon: "fa-solid fa-shield"
+        };
+        const statusClass = c.status === 'pass' ? 'pass' : c.status === 'fail' ? 'fail' : 'warn';
+        const statusLabel = c.status === 'pass' ? 'PASSED' : c.status === 'fail' ? 'VIOLATION' : 'ATTENTION';
+        const statusIcon = c.status === 'pass' ? 'fa-solid fa-circle-check' : c.status === 'fail' ? 'fa-solid fa-circle-xmark' : 'fa-solid fa-triangle-exclamation';
+
+        return `
+          <div class="check-card ${statusClass}">
+            <div class="check-card-header">
+              <div class="check-title-group">
+                <i class="${meta.icon}" style="color: var(--cyan); font-size: 0.95rem;"></i>
+                <span class="check-friendly-name">${meta.title}</span>
+              </div>
+              <span class="check-badge"><i class="${statusIcon}"></i> ${statusLabel}</span>
+            </div>
+            <div class="check-explain">${meta.explain}</div>
+            <div class="check-detail-box">${c.detail}</div>
+            <div class="check-tech-id">Rule ID: ${c.id}</div>
+          </div>
+        `;
+      }).join('');
     }
 
     // Payment Guard Presets
@@ -1045,27 +1410,122 @@
       }
     }
 
+    // Human-friendly dictionary for Payment Policy checks
+    const PAYMENT_CHECK_INFO = {
+      resource: {
+        title: "Merchant Checkout Endpoint (URL)",
+        explain: "Verifies the payment request is bound to your intended HTTPS checkout destination and not an attacker mirror.",
+        icon: "fa-solid fa-link"
+      },
+      scheme: {
+        title: "Payment Standard Protocol",
+        explain: "Ensures the payment challenge follows the negotiated x402 payment scheme (e.g. 'exact').",
+        icon: "fa-solid fa-handshake"
+      },
+      network: {
+        title: "Blockchain Network (Chain ID)",
+        explain: "Prevents cross-chain scams by verifying payment is requested on your pre-authorized network (e.g. Base Sepolia 84532).",
+        icon: "fa-solid fa-cubes"
+      },
+      asset: {
+        title: "Cryptocurrency / Token Contract",
+        explain: "Ensures payment is demanded in your authorized token contract (e.g. verified USDC) and not a counterfeit token.",
+        icon: "fa-solid fa-coins"
+      },
+      amount: {
+        title: "Maximum Spending Limit (Budget Guard)",
+        explain: "Guarantees the required token amount does not exceed the ceiling you set for this agent or session.",
+        icon: "fa-solid fa-wallet"
+      },
+      recipient: {
+        title: "Authorized Recipient Wallet Check",
+        explain: "Guards against wallet-substitution attacks by ensuring funds are sent strictly to your approved merchant address.",
+        icon: "fa-solid fa-user-check"
+      },
+      timeout: {
+        title: "Transaction Validity Window",
+        explain: "Protects against replay or stale authorizations by enforcing a strict time limit on payment requirements.",
+        icon: "fa-solid fa-stopwatch"
+      },
+      policy: {
+        title: "Caller Security Intent Rules",
+        explain: "Validates completeness of your policy rules to prevent paying on ambiguous instructions.",
+        icon: "fa-solid fa-scale-balanced"
+      },
+      requirements: {
+        title: "Payment Candidate Specifications",
+        explain: "Validates that the merchant supplied structured payment options complying with the x402 specification.",
+        icon: "fa-solid fa-receipt"
+      }
+    };
+
     function renderPaymentResult(data) {
       const container = document.getElementById('payment-verdict-container');
-      const banner = document.getElementById('payment-verdict-banner');
+      const hero = document.getElementById('payment-verdict-hero');
+      const iconBox = document.getElementById('payment-icon-box');
       const title = document.getElementById('payment-verdict-title');
       const summary = document.getElementById('payment-verdict-summary');
+      const statusBadge = document.getElementById('payment-status-badge');
+      const guidance = document.getElementById('payment-action-text');
       const grid = document.getElementById('payment-checks-grid');
 
       container.style.display = 'block';
       const status = data.status || 'REVIEW';
-      banner.className = 'verdict-banner ' + status;
-      title.textContent = status;
-      summary.textContent = status === 'PASS' ? 'Payment requirement fully complies with trusted user intent.' : 
-                            status === 'BLOCK' ? 'Requirement violates user policy; payment MUST be rejected.' : 
-                            'Incomplete policy or candidate mismatch; manual review required.';
 
-      grid.innerHTML = (data.checks || []).map(c => `
-        <div class="check-chip ${c.status === 'pass' ? 'pass' : c.status === 'fail' ? 'fail' : 'warn'}">
-          <div class="check-id">${c.id}</div>
-          <div class="check-detail">${c.detail}</div>
-        </div>
-      `).join('');
+      hero.className = 'verdict-hero';
+
+      if (status === 'PASS') {
+        hero.classList.add('PASS');
+        iconBox.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+        title.innerHTML = 'Payment Approved: Conforms to Policy';
+        statusBadge.className = 'verdict-risk-tag low';
+        statusBadge.innerHTML = '<i class="fa-solid fa-check"></i> Safe • PASS';
+        summary.textContent = 'All payment requirements strictly match your authorized recipient, maximum budget, and blockchain network.';
+        guidance.textContent = 'This payment matches your intent rules. Note: PayGuard operates in advisory mode and will not execute payments automatically.';
+      } else if (status === 'REVIEW') {
+        hero.classList.add('REVIEW');
+        iconBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+        title.innerHTML = 'Review Required: Policy Uncertainty';
+        statusBadge.className = 'verdict-risk-tag medium';
+        statusBadge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> REVIEW';
+        summary.textContent = 'The payment parameters could not be fully approved because certain policy safeguards were unspecified.';
+        guidance.textContent = 'Do not sign or pay automatically. Supply a complete recipient allowlist and asset specification, then re-check.';
+      } else {
+        hero.classList.add('BLOCK');
+        iconBox.innerHTML = '<i class="fa-solid fa-ban"></i>';
+        title.innerHTML = 'PAYMENT BLOCKED: Security Violation Detected!';
+        statusBadge.className = 'verdict-risk-tag high';
+        statusBadge.innerHTML = '<i class="fa-solid fa-shield-xmark"></i> BLOCKED';
+        summary.textContent = 'Transaction rejected! The merchant requirements violate your security boundaries (e.g. unauthorized recipient wallet or budget exceeded).';
+        guidance.textContent = 'REJECT THIS PAYMENT IMMEDIATELY. An unauthorized recipient address or excessive spending amount was detected.';
+      }
+
+      // Render human-friendly checks
+      grid.innerHTML = (data.checks || []).map(c => {
+        const meta = PAYMENT_CHECK_INFO[c.id] || {
+          title: c.id.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          explain: "Payment rule evaluated against caller intent policy.",
+          icon: "fa-solid fa-shield"
+        };
+        const statusClass = c.status === 'pass' ? 'pass' : c.status === 'fail' ? 'fail' : 'warn';
+        const statusLabel = c.status === 'pass' ? 'MATCHED' : c.status === 'fail' ? 'VIOLATION' : 'ATTENTION';
+        const statusIcon = c.status === 'pass' ? 'fa-solid fa-circle-check' : c.status === 'fail' ? 'fa-solid fa-circle-xmark' : 'fa-solid fa-triangle-exclamation';
+
+        return `
+          <div class="check-card ${statusClass}">
+            <div class="check-card-header">
+              <div class="check-title-group">
+                <i class="${meta.icon}" style="color: var(--cyan); font-size: 0.95rem;"></i>
+                <span class="check-friendly-name">${meta.title}</span>
+              </div>
+              <span class="check-badge"><i class="${statusIcon}"></i> ${statusLabel}</span>
+            </div>
+            <div class="check-explain">${meta.explain}</div>
+            <div class="check-detail-box">${c.detail}</div>
+            <div class="check-tech-id">Rule ID: ${c.id}</div>
+          </div>
+        `;
+      }).join('');
     }
 
     // Threat Report Generator
@@ -1089,7 +1549,14 @@
 
     function copyReportJson() {
       if (!currentReportJson) return;
-      navigator.clipboard.writeText(currentReportJson).then(() => alert('Report JSON copied to clipboard!'));
+      navigator.clipboard.writeText(currentReportJson).then(() => {
+        const btn = document.querySelector('button[onclick="copyReportJson()"]');
+        if (btn) {
+          const original = btn.innerHTML;
+          btn.innerHTML = '<i class="fa-solid fa-check" style="color: var(--emerald);"></i> Copied to Clipboard!';
+          setTimeout(() => { btn.innerHTML = original; }, 2000);
+        }
+      });
     }
 
     // Bazaar Loader
@@ -1100,11 +1567,14 @@
         const b = await res.json();
         const list = document.getElementById('bazaar-endpoints-list');
         list.innerHTML = (b.info?.endpoints || []).map(ep => `
-          <div class="glass-card" style="padding: 1rem;">
+          <div class="glass-card" style="padding: 1rem 1.25rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-              <span class="pill-secondary" style="font-weight: 700; color: var(--cyan);">${ep.method} ${ep.path}</span>
+              <span class="pill-secondary" style="font-weight: 700; color: var(--cyan); display: inline-flex; align-items: center; gap: 0.4rem;">
+                <i class="fa-solid fa-code-branch"></i> ${ep.method} ${ep.path}
+              </span>
+              <span style="font-size: 0.75rem; color: var(--emerald); font-weight: 700;"><i class="fa-solid fa-circle-check"></i> Discovered</span>
             </div>
-            <div style="font-size: 0.85rem; color: var(--text-muted);">${ep.description}</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">${ep.description}</div>
           </div>
         `).join('');
       } catch (e) {
