@@ -8,10 +8,10 @@ export default async function handler(req, res) {
     if (!res.headersSent) {
       res.statusCode = 500;
       res.setHeader("content-type", "application/json; charset=utf-8");
+      const isDev = process.env.NODE_ENV === "development";
       res.end(JSON.stringify({
         error: "Serverless Function Exception",
-        message: err.message,
-        stack: err.stack
+        message: isDev ? err.message : "Internal error occurred. Please check function logs."
       }));
     }
   }

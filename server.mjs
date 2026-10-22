@@ -247,6 +247,7 @@ async function requestHandler(req, res) {
         "content-type": "text/html; charset=utf-8",
         "content-length": Buffer.byteLength(responseHtml),
         "cache-control": "no-cache",
+        "vary": "Accept",
         "access-control-allow-origin": "*"
       });
       return res.end(responseHtml);
@@ -263,6 +264,7 @@ async function requestHandler(req, res) {
         "content-type": "text/html; charset=utf-8",
         "content-length": Buffer.byteLength(responseHtml),
         "cache-control": "no-cache",
+        "vary": "Accept",
         "access-control-allow-origin": "*"
       });
       return res.end(responseHtml);

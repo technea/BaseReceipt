@@ -371,456 +371,525 @@
     .trust-item i { color: var(--emerald); font-size: 0.75rem; }
 
     /* ========================================================= */
-    /* NEW: ANIMATED EXPLANATORY VISUALIZATION SIMULATOR         */
+    /* INTERCONNECTED FLOW ENGINE VISUALIZATION (Core Ask)      */
     /* ========================================================= */
-    #visual-simulation {
+    #interconnected-flow {
       padding: 4.5rem 0 3.5rem;
     }
 
-    .simulator-wrapper {
-      background: linear-gradient(180deg, rgba(16, 24, 48, 0.85) 0%, rgba(8, 12, 24, 0.95) 100%);
-      border: 1px solid rgba(0, 240, 255, 0.25);
+    .flow-canvas-wrapper {
+      background: linear-gradient(180deg, rgba(16, 24, 48, 0.9) 0%, rgba(7, 11, 22, 0.98) 100%);
+      border: 1px solid rgba(0, 240, 255, 0.3);
       border-radius: 24px;
-      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75), 0 0 40px rgba(0, 240, 255, 0.08);
-      padding: 2rem;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.85), 0 0 50px rgba(0, 240, 255, 0.12);
+      padding: 2.25rem 2rem;
       position: relative;
       overflow: hidden;
     }
 
-    /* Simulator Top Control Bar */
-    .sim-control-bar {
+    /* Interactive Scenario Controls */
+    .flow-control-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
       flex-wrap: wrap;
-      padding-bottom: 1.5rem;
+      padding-bottom: 1.25rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      margin-bottom: 2rem;
+      margin-bottom: 1.25rem;
     }
 
-    .sim-playback-controls {
+    .flow-status-pill {
       display: flex;
       align-items: center;
       gap: 8px;
-    }
-
-    .sim-btn {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: var(--text-main);
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s ease;
-    }
-
-    .sim-btn:hover {
-      background: rgba(0, 240, 255, 0.15);
-      border-color: rgba(0, 240, 255, 0.35);
-      color: var(--cyan);
-    }
-
-    .sim-btn.active {
-      background: var(--cyan);
-      color: #060911;
-      border-color: var(--cyan);
-      box-shadow: 0 0 15px var(--cyan-glow);
-    }
-
-    .sim-mode-pills {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(0, 0, 0, 0.4);
-      padding: 4px;
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .sim-mode-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-size: 0.78rem;
-      font-weight: 600;
-      padding: 6px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .sim-mode-btn.active {
-      background: rgba(255, 255, 255, 0.1);
-      color: #ffffff;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    }
-
-    .sim-mode-btn.active.mode-safe {
-      background: rgba(16, 185, 129, 0.2);
-      color: var(--emerald);
-      border: 1px solid rgba(16, 185, 129, 0.35);
-    }
-
-    .sim-mode-btn.active.mode-attack {
-      background: rgba(244, 63, 94, 0.2);
-      color: var(--rose);
-      border: 1px solid rgba(244, 63, 94, 0.35);
-    }
-
-    /* The Animated Stage Track */
-    .sim-stage-track {
-      position: relative;
-      margin: 2.5rem 0 3.5rem;
-      padding: 0 20px;
-    }
-
-    /* Glowing Bus Track Line */
-    .track-line {
-      position: absolute;
-      top: 40px;
-      left: 60px;
-      right: 60px;
-      height: 6px;
-      background: rgba(255, 255, 255, 0.06);
-      border-radius: 3px;
-      overflow: hidden;
-      z-index: 1;
-    }
-
-    .track-progress-fill {
-      height: 100%;
-      width: 20%;
-      background: linear-gradient(90deg, var(--cyan) 0%, var(--violet) 50%, var(--emerald) 100%);
-      box-shadow: 0 0 16px var(--cyan);
-      transition: width 0.7s cubic-bezier(0.34, 1.3, 0.64, 1);
-    }
-
-    /* 5 Stations along the track */
-    .track-stations {
-      display: flex;
-      justify-content: space-between;
-      position: relative;
-      z-index: 2;
-    }
-
-    .sim-station {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      cursor: pointer;
-      width: 140px;
-      text-align: center;
-      transition: transform 0.2s ease;
-    }
-
-    .sim-station:hover {
-      transform: translateY(-2px);
-    }
-
-    .station-node {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background: #080d1a;
-      border: 2px solid rgba(255, 255, 255, 0.15);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.6rem;
-      color: var(--text-dim);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-      position: relative;
-      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
-    .station-node::after {
-      content: '';
-      position: absolute;
-      inset: -6px;
-      border-radius: 50%;
-      border: 2px dashed transparent;
-      transition: all 0.4s ease;
-    }
-
-    .sim-station.active .station-node {
-      border-color: var(--cyan);
-      color: var(--cyan);
-      box-shadow: 0 0 30px var(--cyan-glow), inset 0 0 15px rgba(0, 240, 255, 0.2);
-      transform: scale(1.1);
-    }
-
-    .sim-station.active .station-node::after {
-      border-color: var(--cyan);
-      animation: rotateRing 6s linear infinite;
-    }
-
-    .sim-station.passed .station-node {
-      border-color: var(--emerald);
-      color: var(--emerald);
-      box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
-    }
-
-    .sim-station.blocked .station-node {
-      border-color: var(--rose) !important;
-      color: var(--rose) !important;
-      box-shadow: 0 0 30px rgba(244, 63, 94, 0.4) !important;
-      animation: alertJitter 0.3s ease-in-out infinite alternate;
-    }
-
-    @keyframes rotateRing {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    @keyframes alertJitter {
-      0% { transform: scale(1.1) rotate(-2deg); }
-      100% { transform: scale(1.1) rotate(2deg); }
-    }
-
-    .station-title {
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      margin-top: 14px;
-      transition: color 0.2s ease;
-    }
-
-    .sim-station.active .station-title {
-      color: var(--cyan);
-    }
-
-    .station-step-num {
       font-family: var(--font-mono);
-      font-size: 0.68rem;
-      color: var(--text-dim);
-      margin-top: 2px;
-    }
-
-    /* Explanatory Visualization Split Screen (Live Packet X-Ray & Deep Explanation) */
-    .sim-detail-grid {
-      display: grid;
-      grid-template-columns: 1.15fr 1fr;
-      gap: 24px;
-      background: rgba(0, 0, 0, 0.35);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 24px;
-      position: relative;
-      min-height: 280px;
-    }
-
-    @media (max-width: 900px) {
-      .sim-detail-grid { grid-template-columns: 1fr; }
-    }
-
-    /* Left: Live Packet X-Ray Dissector Visual */
-    .packet-xray-view {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      background: rgba(10, 15, 28, 0.85);
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 18px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .xray-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .xray-title {
-      font-size: 0.82rem;
-      font-weight: 700;
+      font-size: 0.75rem;
       color: var(--cyan);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .xray-stream-badge {
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      padding: 2px 8px;
-      border-radius: 4px;
-      background: rgba(0, 240, 255, 0.1);
-      color: var(--cyan);
+      background: rgba(0, 240, 255, 0.08);
+      padding: 6px 14px;
+      border-radius: 9999px;
       border: 1px solid rgba(0, 240, 255, 0.25);
     }
 
-    /* Interactive Visual Scanner Box */
-    .xray-chamber {
-      background: #060911;
-      border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      padding: 16px;
-      position: relative;
-      overflow: hidden;
-      min-height: 120px;
+    .flow-scenario-buttons {
       display: flex;
-      flex-direction: column;
-      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.45);
+      padding: 5px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      flex-wrap: wrap;
     }
 
-    .chamber-laser {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 3px;
-      background: var(--cyan);
-      box-shadow: 0 0 15px var(--cyan), 0 0 30px var(--cyan);
-      animation: laserScanChamber 2s ease-in-out infinite alternate;
+    .flow-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.25s ease;
     }
 
-    @keyframes laserScanChamber {
-      0% { left: 5%; }
-      100% { left: 95%; }
+    .flow-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.06);
     }
 
-    .chamber-laser.alarm {
-      background: var(--rose) !important;
-      box-shadow: 0 0 20px var(--rose), 0 0 40px var(--rose) !important;
+    .flow-btn.active.btn-safe {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: rgba(16, 185, 129, 0.45);
+      color: var(--emerald);
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
     }
 
-    .xray-tokens-display {
+    .flow-btn.active.btn-attack {
+      background: rgba(244, 63, 94, 0.2);
+      border-color: rgba(244, 63, 94, 0.45);
+      color: var(--rose);
+      box-shadow: 0 0 16px rgba(244, 63, 94, 0.25);
+    }
+
+    /* ========================================================= */
+    /* INTERACTIVE FLOW STEPPER & TIMELINE PROGRESS BAR          */
+    /* ========================================================= */
+    .flow-stepper-container {
+      background: rgba(8, 12, 24, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 1.15rem 1.4rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .flow-stepper-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .flow-stepper-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .flow-stepper-controls {
       display: flex;
       align-items: center;
       gap: 6px;
-      flex-wrap: wrap;
-      font-family: var(--font-mono);
-      font-size: 0.95rem;
-      position: relative;
-      z-index: 2;
     }
 
-    .token-char {
+    .stepper-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      cursor: pointer;
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      width: 26px;
-      height: 32px;
-      border-radius: 4px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .stepper-btn:hover {
+      background: rgba(0, 240, 255, 0.15);
+      border-color: var(--cyan);
       color: #ffffff;
+    }
+
+    .stepper-btn.active-play {
+      background: rgba(0, 240, 255, 0.2);
+      border-color: var(--cyan);
+      color: var(--cyan);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+    }
+
+    .flow-steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      position: relative;
+    }
+
+    @media (max-width: 820px) {
+      .flow-steps-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .flow-steps-grid { grid-template-columns: 1fr; }
+    }
+
+    .flow-step-item {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .flow-step-item::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      width: 0%;
+      background: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan);
+      transition: width 0.4s ease;
+    }
+
+    .flow-step-item.active {
+      background: rgba(0, 240, 255, 0.08);
+      border-color: rgba(0, 240, 255, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 240, 255, 0.1);
+    }
+
+    .flow-step-item.active::after {
+      width: 100%;
+    }
+
+    .flow-step-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .flow-step-num {
+      font-size: 0.7rem;
+      font-family: var(--font-mono);
       font-weight: 700;
+      color: var(--cyan);
+      background: rgba(0, 240, 255, 0.12);
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+
+    .flow-step-item.active .flow-step-num {
+      background: var(--cyan);
+      color: #060911;
+      box-shadow: 0 0 10px var(--cyan);
+    }
+
+    .flow-step-icon {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+    }
+
+    .flow-step-item.active .flow-step-icon {
+      color: var(--cyan);
+    }
+
+    .flow-step-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .flow-step-desc {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+      line-height: 1.35;
+    }
+
+    /* Live Cyberpunk Narration HUD */
+    .flow-hud-narrator {
+      background: linear-gradient(90deg, rgba(13, 20, 38, 0.95) 0%, rgba(10, 16, 32, 0.95) 100%);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      border-left: 4px solid var(--cyan);
+      border-radius: 12px;
+      padding: 12px 18px;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      transition: all 0.35s ease;
+    }
+
+    .hud-signal-box {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      height: 22px;
+    }
+
+    .hud-signal-bar {
+      width: 3px;
+      height: 100%;
+      background: var(--cyan);
+      border-radius: 2px;
+      animation: signalBarWave 1.2s ease-in-out infinite alternate;
+    }
+    .hud-signal-bar:nth-child(2) { animation-delay: 0.2s; height: 60%; }
+    .hud-signal-bar:nth-child(3) { animation-delay: 0.4s; height: 80%; }
+    .hud-signal-bar:nth-child(4) { animation-delay: 0.1s; height: 40%; }
+
+    @keyframes signalBarWave {
+      0% { transform: scaleY(0.3); opacity: 0.4; }
+      100% { transform: scaleY(1); opacity: 1; box-shadow: 0 0 6px var(--cyan); }
+    }
+
+    .hud-text-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .hud-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.7rem;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .hud-stage-badge {
+      color: var(--cyan);
+      font-weight: 700;
+    }
+
+    .hud-status-badge {
+      color: var(--text-dim);
+    }
+
+    .hud-narration-message {
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: #ffffff;
+      line-height: 1.45;
+    }
+
+    /* ========================================================= */
+    /* THE INTERCONNECTED SVG CIRCUIT STAGE                      */
+    /* ========================================================= */
+    .flow-stage {
+      position: relative;
+      width: 100%;
+      min-height: 540px;
+      margin: 0.75rem 0 1.25rem;
+      background: radial-gradient(circle at 40% 50%, rgba(13, 20, 38, 0.4) 0%, rgba(6, 9, 17, 0.95) 100%);
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      overflow: hidden;
+    }
+
+    .flow-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+    }
+
+    /* Cable Styles with Animated Flow Dashes */
+    .flow-wire {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.1);
+      stroke-width: 3.5;
+      stroke-linecap: round;
+      transition: stroke 0.4s ease, stroke-width 0.4s ease, filter 0.4s ease, opacity 0.4s ease;
+    }
+
+    .flow-wire.wire-dimmed {
+      opacity: 0.2;
+      stroke: rgba(255, 255, 255, 0.06);
+    }
+
+    .flow-wire.active-wire {
+      stroke-width: 4.5;
+      filter: drop-shadow(0 0 10px currentColor);
+    }
+
+    .flow-wire.pulse-cyan {
+      stroke: var(--cyan);
+      stroke-dasharray: 8 12;
+      animation: dashMove 1.2s linear infinite;
+    }
+
+    .flow-wire.pulse-emerald {
+      stroke: var(--emerald);
+      stroke-dasharray: 8 12;
+      animation: dashMove 1.2s linear infinite;
+    }
+
+    .flow-wire.pulse-rose {
+      stroke: var(--rose);
+      stroke-dasharray: 8 10;
+      animation: dashMove 0.75s linear infinite;
+    }
+
+    .flow-wire.pulse-amber {
+      stroke: var(--amber);
+      stroke-dasharray: 8 12;
+      animation: dashMove 1.2s linear infinite;
+    }
+
+    @keyframes dashMove {
+      from { stroke-dashoffset: 40; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    /* Traveling Data Photons */
+    .flow-photon {
+      r: 6;
+      filter: drop-shadow(0 0 10px currentColor);
+      transition: fill 0.3s ease, opacity 0.3s ease;
+    }
+
+    /* Connection Jack Ports */
+    .flow-port {
+      fill: #060911;
+      stroke: rgba(255, 255, 255, 0.25);
+      stroke-width: 2;
       transition: all 0.3s ease;
     }
 
-    .token-char.spoofed {
-      background: rgba(244, 63, 94, 0.25) !important;
-      border-color: var(--rose) !important;
-      color: #fda4af !important;
-      box-shadow: 0 0 12px rgba(244, 63, 94, 0.4);
-      animation: pulseAlert 0.8s infinite alternate;
+    .flow-port.port-active {
+      fill: var(--cyan);
+      stroke: #ffffff;
+      box-shadow: 0 0 10px var(--cyan);
     }
 
-    @keyframes pulseAlert {
-      0% { transform: scale(1); }
-      100% { transform: scale(1.15); }
+    /* Interactive Component Cards on the Canvas */
+    .flow-node-box {
+      cursor: pointer;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.25s ease;
     }
 
-    .token-char.safe-match {
-      background: rgba(16, 185, 129, 0.2);
-      border-color: var(--emerald);
-      color: #6ee7b7;
+    .flow-node-box:hover {
+      transform: scale(1.025);
     }
 
-    .xray-meta-chips {
+    .flow-node-box.stage-focus rect {
+      stroke: var(--cyan) !important;
+      stroke-width: 2.5 !important;
+      filter: drop-shadow(0 0 14px rgba(0, 240, 255, 0.45));
+    }
+
+    .flow-node-box.stage-pass rect {
+      stroke: var(--emerald) !important;
+      stroke-width: 2.5 !important;
+      filter: drop-shadow(0 0 18px rgba(16, 185, 129, 0.5));
+    }
+
+    .flow-node-box.stage-alert rect {
+      stroke: var(--rose) !important;
+      stroke-width: 2.5 !important;
+      filter: drop-shadow(0 0 20px rgba(244, 63, 94, 0.6));
+    }
+
+    /* Radar scan beam inside Airgap Core */
+    .radar-sweep {
+      transform-origin: 395px 250px;
+      animation: radarRotate 3s linear infinite;
+    }
+
+    @keyframes radarRotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Shockwave pulse ring */
+    .shockwave-ring {
+      transform-origin: center;
+      animation: shockwaveExpand 2s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+    }
+
+    @keyframes shockwaveExpand {
+      0% { r: 18; opacity: 0.9; }
+      100% { r: 42; opacity: 0; }
+    }
+
+    /* Live Flow Explainer Readout (Below the SVG canvas) */
+    .flow-explainer-readout {
+      display: grid;
+      grid-template-columns: 2fr 1.2fr;
+      gap: 20px;
+      background: rgba(7, 10, 19, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 1.5rem 1.75rem;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 860px) {
+      .flow-explainer-readout { grid-template-columns: 1fr; }
+    }
+
+    .explainer-left h4 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
       display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .explainer-left p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .explainer-highlight {
+      background: rgba(0, 240, 255, 0.06);
+      border-left: 3px solid var(--cyan);
+      padding: 8px 12px;
+      border-radius: 0 6px 6px 0;
+      font-size: 0.82rem;
+      color: #e2e8f0;
       margin-top: 10px;
     }
 
-    .meta-chip {
-      font-family: var(--font-mono);
-      font-size: 0.72rem;
-      padding: 3px 8px;
-      border-radius: 4px;
-      background: rgba(255, 255, 255, 0.04);
+    .explainer-right {
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 12px;
       border: 1px solid rgba(255, 255, 255, 0.06);
-      color: var(--text-muted);
-    }
-
-    /* Right: Deep Plain-English Explanation */
-    .sim-explanation-panel {
+      padding: 14px 16px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
     }
 
-    .explanation-badge-step {
-      font-family: var(--font-mono);
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--cyan);
-      margin-bottom: 6px;
-    }
-
-    .explanation-title {
-      font-size: 1.25rem;
-      font-weight: 800;
-      color: var(--text-main);
-      margin-bottom: 10px;
-      line-height: 1.25;
-    }
-
-    .explanation-body {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      line-height: 1.6;
-      margin-bottom: 14px;
-    }
-
-    .explanation-callout {
-      background: rgba(0, 240, 255, 0.06);
-      border-left: 3px solid var(--cyan);
-      padding: 10px 14px;
-      border-radius: 0 8px 8px 0;
-      font-size: 0.82rem;
-      color: #d1d5db;
-      line-height: 1.5;
-    }
-
-    .sim-footer-metrics {
+    .telemetry-row {
       display: flex;
-      align-items: center;
-      gap: 16px;
-      padding-top: 14px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-      margin-top: 14px;
+      justify-content: space-between;
+      font-size: 0.78rem;
       font-family: var(--font-mono);
-      font-size: 0.72rem;
-      color: var(--text-dim);
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     }
-
-    .sim-footer-metrics span {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .sim-footer-metrics span strong {
-      color: var(--cyan);
-    }
+    .telemetry-row:last-child { border-bottom: none; }
+    .telemetry-label { color: var(--text-dim); }
+    .telemetry-val { font-weight: 700; }
 
     /* ========================================================= */
     /* THE SENTINEL STUDIO COCKPIT                               */
@@ -1114,7 +1183,7 @@
       border: 1px solid rgba(99, 102, 241, 0.25);
     }
 
-    /* The 4 Gates in Middle Column */
+    /* 4 Gates in Middle Column */
     .gates-pipeline {
       display: flex;
       flex-direction: column;
@@ -1335,207 +1404,6 @@
       gap: 10px;
       font-size: 0.8rem;
       transition: all 0.3s ease;
-    }
-
-    /* ========================================================= */
-    /* SYSTEM HIERARCHY                                          */
-    /* ========================================================= */
-    .section-header {
-      text-align: center;
-      max-width: 740px;
-      margin: 0 auto 3.5rem;
-    }
-
-    .section-eyebrow {
-      font-size: 0.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--cyan);
-      margin-bottom: 0.75rem;
-      display: block;
-    }
-
-    .section-title {
-      font-size: clamp(2rem, 3.8vw, 2.85rem);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      line-height: 1.15;
-      margin-bottom: 1rem;
-    }
-
-    .section-subtitle {
-      font-size: 1.05rem;
-      color: var(--text-muted);
-      line-height: 1.6;
-    }
-
-    .hierarchy-container {
-      background: rgba(13, 20, 38, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 24px;
-      padding: 3rem 2.5rem;
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* Glowing Circuit Cable */
-    .circuit-conduit {
-      position: absolute;
-      left: 42px;
-      top: 60px;
-      bottom: 60px;
-      width: 4px;
-      background: linear-gradient(180deg, var(--cyan) 0%, var(--violet) 40%, var(--amber) 75%, var(--emerald) 100%);
-      border-radius: 2px;
-      z-index: 1;
-      box-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
-    }
-
-    .traveling-photon {
-      position: absolute;
-      left: -4px;
-      width: 12px;
-      height: 24px;
-      border-radius: 6px;
-      background: #ffffff;
-      box-shadow: 0 0 15px #ffffff, 0 0 30px var(--cyan);
-      animation: packetTravel 4s linear infinite;
-    }
-
-    @keyframes packetTravel {
-      0% { top: 0%; opacity: 0; }
-      10% { opacity: 1; }
-      90% { opacity: 1; }
-      100% { top: 96%; opacity: 0; }
-    }
-
-    .hierarchy-tiers {
-      display: flex;
-      flex-direction: column;
-      gap: 2.25rem;
-      position: relative;
-      z-index: 2;
-    }
-
-    .hierarchy-tier-card {
-      background: rgba(10, 15, 29, 0.95);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 1.75rem 2rem 1.75rem 5.5rem;
-      position: relative;
-      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-      cursor: pointer;
-    }
-
-    .hierarchy-tier-card:hover {
-      border-color: rgba(0, 240, 255, 0.4);
-      transform: translateX(6px);
-      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6), 0 0 25px rgba(0, 240, 255, 0.12);
-    }
-
-    .tier-node-indicator {
-      position: absolute;
-      left: 20px;
-      top: 26px;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: #060911;
-      border: 3px solid var(--cyan);
-      box-shadow: 0 0 20px var(--cyan-glow);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.05rem;
-      color: var(--cyan);
-      font-weight: 800;
-      transition: all 0.3s ease;
-    }
-
-    .hierarchy-tier-card:hover .tier-node-indicator {
-      transform: scale(1.12);
-      border-color: #ffffff;
-      box-shadow: 0 0 25px #ffffff;
-    }
-
-    .tier-content-grid {
-      display: grid;
-      grid-template-columns: 2fr 3fr;
-      gap: 2.25rem;
-      align-items: start;
-    }
-
-    @media (max-width: 880px) {
-      .tier-content-grid { grid-template-columns: 1fr; }
-      .hierarchy-tier-card { padding-left: 4.8rem; }
-    }
-
-    .tier-header-info h3 {
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 6px;
-    }
-
-    .tier-level-badge {
-      font-size: 0.7rem;
-      font-family: var(--font-mono);
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 4px;
-      background: rgba(0, 240, 255, 0.1);
-      color: var(--cyan);
-      border: 1px solid rgba(0, 240, 255, 0.25);
-    }
-
-    .tier-role-desc {
-      font-size: 0.88rem;
-      color: var(--text-muted);
-      line-height: 1.55;
-    }
-
-    .tier-submodules {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .submodule-pill {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 8px;
-      padding: 10px 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      transition: all 0.25s ease;
-    }
-
-    .submodule-pill:hover {
-      background: rgba(255, 255, 255, 0.06);
-      border-color: rgba(0, 240, 255, 0.2);
-    }
-
-    .submodule-title {
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .submodule-title i { color: var(--cyan); }
-
-    .submodule-detail {
-      font-size: 0.72rem;
-      color: var(--text-dim);
-      font-family: var(--font-mono);
     }
 
     /* STEP-BY-STEP PIPELINE */
@@ -2009,10 +1877,9 @@
       </a>
 
       <nav class="nav-links">
-        <a href="#visual-simulation" class="nav-link"><i class="fa-solid fa-play-circle" style="color:var(--cyan)"></i> Live Visualizer</a>
+        <a href="#interconnected-flow" class="nav-link"><i class="fa-solid fa-diagram-project" style="color:var(--cyan)"></i> Interconnected Flow</a>
         <a href="#sentinel-studio" class="nav-link"><i class="fa-solid fa-desktop"></i> Sentinel Studio</a>
-        <a href="#system-hierarchy" class="nav-link"><i class="fa-solid fa-sitemap"></i> Hierarchy</a>
-        <a href="#how-it-works" class="nav-link"><i class="fa-solid fa-route"></i> How It Works</a>
+        <a href="#how-it-works" class="nav-link"><i class="fa-solid fa-route"></i> Lifecycle</a>
         <a href="#live-lab" class="nav-link"><i class="fa-solid fa-flask"></i> Interactive Lab</a>
         <a href="#pillars" class="nav-link"><i class="fa-solid fa-layer-group"></i> Architecture</a>
         <a href="#faq" class="nav-link"><i class="fa-solid fa-circle-question"></i> FAQ</a>
@@ -2049,14 +1916,14 @@
         </p>
 
         <div class="hero-cta-group">
-          <a href="#visual-simulation" class="btn btn-glow">
-            <i class="fa-solid fa-play"></i> Watch Live Visualization
+          <a href="#interconnected-flow" class="btn btn-glow">
+            <i class="fa-solid fa-diagram-project"></i> Watch Interconnected Flow
           </a>
-          <a href="#system-hierarchy" class="btn btn-secondary">
-            <i class="fa-solid fa-sitemap"></i> Explore 4-Layer Hierarchy
+          <a href="#sentinel-studio" class="btn btn-secondary">
+            <i class="fa-solid fa-desktop"></i> Sentinel Operator Studio
           </a>
           <a href="/dashboard" class="btn btn-secondary">
-            <i class="fa-solid fa-sliders"></i> Full Operator Dashboard
+            <i class="fa-solid fa-sliders"></i> Security Console
           </a>
         </div>
 
@@ -2071,142 +1938,389 @@
     </section>
 
     <!-- ========================================================= -->
-    <!-- NEW SECTION: ANIMATED VISUALIZATION EXPLAINER             -->
+    <!-- INTERCONNECTED FLOW ENGINE VISUALIZATION (Core User Ask)  -->
     <!-- ========================================================= -->
-    <section id="visual-simulation" class="container">
+    <section id="interconnected-flow" class="container">
       <div class="section-header">
-        <span class="section-eyebrow">Interactive Visualizer</span>
-        <h2 class="section-title">Visualizing the 5-Station Security Pipeline</h2>
+        <span class="section-eyebrow">Visual System Flow</span>
+        <h2 class="section-title">How Everything Connects in Real-Time</h2>
         <p class="section-subtitle">
-          Watch a live payment intent packet travel through PayGuard's in-memory inspection chambers. Switch attack modes or scrub through each station to see exactly how threats are intercepted.
+          Every component in PayGuard is physically wired into a continuous defensive circuit. Watch how packets travel from autonomous AI agents, pass through parallel in-memory inspection chambers, and branch into secure signatures or defensive circuit-breakers.
         </p>
       </div>
 
-      <div class="simulator-wrapper">
-        <!-- Top Controls: Auto-Play, Step, and Attack Modes -->
-        <div class="sim-control-bar">
-          <div class="sim-playback-controls">
-            <button class="sim-btn" id="simPlayBtn" onclick="toggleSimPlay()">
-              <i class="fa-solid fa-pause" id="simPlayIcon"></i> <span id="simPlayText">Pause</span>
-            </button>
-            <button class="sim-btn" onclick="stepSim(-1)">
-              <i class="fa-solid fa-backward-step"></i> Prev
-            </button>
-            <button class="sim-btn" onclick="stepSim(1)">
-              <i class="fa-solid fa-forward-step"></i> Next
-            </button>
-            <button class="sim-btn" onclick="restartSim()">
-              <i class="fa-solid fa-arrow-rotate-left"></i> Restart
-            </button>
+      <div class="flow-canvas-wrapper">
+        <!-- Control Bar: Scenarios & Interactive Switcher -->
+        <div class="flow-control-bar">
+          <div class="flow-status-pill">
+            <span class="pill-dot"></span>
+            <span id="flowStatusLabel">ACTIVE CIRCUIT · AIRGAPPED IN-MEMORY BUS</span>
           </div>
 
-          <div class="sim-mode-pills">
-            <button class="sim-mode-btn active mode-safe" id="modeBtnSafe" onclick="setSimMode('safe')">
-              <i class="fa-solid fa-circle-check"></i> Legitimate Merchant
+          <div class="flow-scenario-buttons">
+            <button class="flow-btn active btn-safe" id="flowBtnSafe" onclick="selectFlowScenario('safe')">
+              <i class="fa-solid fa-shield-check"></i> 1. Safe Merchant (0.001 USDC)
             </button>
-            <button class="sim-mode-btn" id="modeBtnHomoglyph" onclick="setSimMode('homoglyph')">
-              <i class="fa-solid fa-mask"></i> Cyrillic Spoof Attack
+            <button class="flow-btn" id="flowBtnPhish" onclick="selectFlowScenario('phish')">
+              <i class="fa-solid fa-mask"></i> 2. Cyrillic Phish (pаybox.sh)
             </button>
-            <button class="sim-mode-btn" id="modeBtnDrain" onclick="setSimMode('drain')">
-              <i class="fa-solid fa-money-bill-transfer"></i> $500 Drain Attack
+            <button class="flow-btn" id="flowBtnDrain" onclick="selectFlowScenario('drain')">
+              <i class="fa-solid fa-money-bill-transfer"></i> 3. Overspend Drain ($500)
             </button>
           </div>
         </div>
 
-        <!-- Animated Physical Track with 5 Stations -->
-        <div class="sim-stage-track">
-          <!-- Glowing Conduit Line with Dynamic Fill -->
-          <div class="track-line">
-            <div class="track-progress-fill" id="simTrackFill" style="width: 20%;"></div>
+        <!-- Interactive Step-by-Step Flow Timeline Controller -->
+        <div class="flow-stepper-container">
+          <div class="flow-stepper-header">
+            <div class="flow-stepper-title">
+              <i class="fa-solid fa-diagram-project" style="color:var(--cyan)"></i>
+              <span>Interactive Execution Timeline — Click Any Stage to Scrub</span>
+            </div>
+            <div class="flow-stepper-controls">
+              <button class="stepper-btn" onclick="prevFlowStep()" title="Previous Step">
+                <i class="fa-solid fa-backward-step"></i> Prev
+              </button>
+              <button class="stepper-btn active-play" id="stepperPlayBtn" onclick="toggleFlowPlay()" title="Toggle Auto-Play">
+                <i class="fa-solid fa-pause" id="stepperPlayIcon"></i> <span id="stepperPlayText">Pause</span>
+              </button>
+              <button class="stepper-btn" onclick="nextFlowStep()" title="Next Step">
+                Next <i class="fa-solid fa-forward-step"></i>
+              </button>
+              <button class="stepper-btn" onclick="restartFlow()" title="Restart Story Sequence">
+                <i class="fa-solid fa-rotate-left"></i> Replay
+              </button>
+            </div>
           </div>
 
-          <!-- 5 Physical Station Nodes -->
-          <div class="track-stations">
-            <!-- Station 1 -->
-            <div class="sim-station active" id="station1" onclick="jumpToStation(1)">
-              <div class="station-node">
-                <i class="fa-solid fa-robot"></i>
+          <div class="flow-steps-grid">
+            <div class="flow-step-item active" id="stepIndicator1" onclick="jumpToFlowStep(1)">
+              <div class="flow-step-top">
+                <span class="flow-step-num">STAGE 01</span>
+                <i class="fa-solid fa-satellite-dish flow-step-icon"></i>
               </div>
-              <span class="station-title">1. Agent Intent</span>
-              <span class="station-step-num">HTTP 402</span>
+              <div class="flow-step-title">Payment Trigger</div>
+              <div class="flow-step-desc">Agent gets HTTP 402 invoice</div>
             </div>
 
-            <!-- Station 2 -->
-            <div class="sim-station" id="station2" onclick="jumpToStation(2)">
-              <div class="station-node">
-                <i class="fa-solid fa-microchip"></i>
+            <div class="flow-step-item" id="stepIndicator2" onclick="jumpToFlowStep(2)">
+              <div class="flow-step-top">
+                <span class="flow-step-num">STAGE 02</span>
+                <i class="fa-solid fa-shield-halved flow-step-icon"></i>
               </div>
-              <span class="station-title">2. SSRF Airgap</span>
-              <span class="station-step-num">In-Memory</span>
+              <div class="flow-step-title">Zero-SSRF Airgap</div>
+              <div class="flow-step-desc">Local in-memory RAM isolation</div>
             </div>
 
-            <!-- Station 3 -->
-            <div class="sim-station" id="station3" onclick="jumpToStation(3)">
-              <div class="station-node">
-                <i class="fa-solid fa-font"></i>
+            <div class="flow-step-item" id="stepIndicator3" onclick="jumpToFlowStep(3)">
+              <div class="flow-step-top">
+                <span class="flow-step-num">STAGE 03</span>
+                <i class="fa-solid fa-microchip flow-step-icon"></i>
               </div>
-              <span class="station-title">3. Homoglyph Lexer</span>
-              <span class="station-step-num">Punycode</span>
+              <div class="flow-step-title">Tri-Stream Deep Scan</div>
+              <div class="flow-step-desc">Homoglyphs, Limits &amp; Secrets</div>
             </div>
 
-            <!-- Station 4 -->
-            <div class="sim-station" id="station4" onclick="jumpToStation(4)">
-              <div class="station-node">
-                <i class="fa-solid fa-scale-balanced"></i>
+            <div class="flow-step-item" id="stepIndicator4" onclick="jumpToFlowStep(4)">
+              <div class="flow-step-top">
+                <span class="flow-step-num">STAGE 04</span>
+                <i class="fa-solid fa-circle-check flow-step-icon"></i>
               </div>
-              <span class="station-title">4. Policy Ceiling</span>
-              <span class="station-step-num">Limit Guard</span>
-            </div>
-
-            <!-- Station 5 -->
-            <div class="sim-station" id="station5" onclick="jumpToStation(5)">
-              <div class="station-node">
-                <i class="fa-solid fa-shield-halved"></i>
-              </div>
-              <span class="station-title">5. Final Verdict</span>
-              <span class="station-step-num">Advisory Gate</span>
+              <div class="flow-step-title">Execution / Trip</div>
+              <div class="flow-step-desc">Safe signature or circuit trip</div>
             </div>
           </div>
         </div>
 
-        <!-- Split Screen: Live X-Ray Dissector (Left) & Plain-English Explainer (Right) -->
-        <div class="sim-detail-grid">
-          <!-- Left: Live X-Ray Dissector -->
-          <div class="packet-xray-view">
-            <div class="xray-header">
-              <span class="xray-title"><i class="fa-solid fa-radar"></i> In-Memory Packet Inspection</span>
-              <span class="xray-stream-badge" id="xrayStreamBadge">STATION 1 OF 5</span>
+        <!-- Live Cyberpunk Narration HUD -->
+        <div class="flow-hud-narrator" id="flowHudNarrator">
+          <div class="hud-signal-box">
+            <div class="hud-signal-bar"></div>
+            <div class="hud-signal-bar"></div>
+            <div class="hud-signal-bar"></div>
+            <div class="hud-signal-bar"></div>
+          </div>
+          <div class="hud-text-area">
+            <div class="hud-meta-row">
+              <span class="hud-stage-badge" id="hudStageBadge">STAGE 1 / 4 · INGESTION PHASE</span>
+              <span class="hud-status-badge" id="hudLatencyBadge">AIRGAP LATENCY: &lt;1ms</span>
+              <span class="hud-status-badge" style="color:var(--emerald)" id="hudVpcBadge">VPC ISOLATION: ACTIVE</span>
             </div>
-
-            <div class="xray-chamber" id="xrayChamber">
-              <div class="chamber-laser" id="chamberLaser"></div>
-              <div class="xray-tokens-display" id="xrayTokensDisplay">
-                <!-- Dynamically populated character-by-character tokens -->
-              </div>
+            <div class="hud-narration-message" id="hudNarrationMessage">
+              Autonomous Agent intercepts HTTP 402 challenge for 0.001 USDC. Payment intent dispatched into PayGuard input bus...
             </div>
+          </div>
+        </div>
 
-            <div class="xray-meta-chips" id="xrayMetaChips">
-              <!-- Meta chips: network, asset, amount, latency -->
+        <!-- The SVG Connected Circuit Stage -->
+        <div class="flow-stage">
+          <svg class="flow-svg" viewBox="0 0 1140 540" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <!-- Tech Blueprint Grid Pattern -->
+              <pattern id="flowGrid" width="30" height="30" patternUnits="userSpaceOnUse">
+                <circle cx="15" cy="15" r="1" fill="rgba(255, 255, 255, 0.05)" />
+              </pattern>
+
+              <!-- Hazard Warning Stripes Pattern for Blast Shield -->
+              <pattern id="hazardStripes" width="20" height="20" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                <line x1="0" y1="0" x2="0" y2="20" stroke="#f43f5e" stroke-width="10" />
+                <line x1="10" y1="0" x2="10" y2="20" stroke="#180509" stroke-width="10" />
+              </pattern>
+
+              <!-- Glow Filters -->
+              <filter id="glowCyan" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="6" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+              <filter id="glowEmerald" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="8" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+              <filter id="glowRose" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="8" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+
+              <!-- Node Card Background Gradients -->
+              <linearGradient id="gradNodeDark" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#0e172a" />
+                <stop offset="100%" stop-color="#090d18" />
+              </linearGradient>
+              <linearGradient id="gradCoreGate" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#1e293b" />
+                <stop offset="100%" stop-color="#0a1020" />
+              </linearGradient>
+            </defs>
+
+            <!-- Blueprint Background Grid -->
+            <rect width="100%" height="100%" fill="url(#flowGrid)" />
+
+            <!-- ============================================== -->
+            <!-- CONNECTING WIRES & CONDUITS (INTERCONNECTED)   -->
+            <!-- ============================================== -->
+
+            <!-- Wire 1: Agent Input -> Gateway Core -->
+            <path id="wireAgent" class="flow-wire active-wire pulse-cyan" d="M 195,110 C 260,110 270,250 340,250" />
+
+            <!-- Wire 2: Web Merchant -> Gateway Core -->
+            <path id="wireWeb" class="flow-wire active-wire pulse-cyan" d="M 195,250 C 260,250 270,260 340,260" />
+
+            <!-- Wire 3: User Policy -> Gateway Core -->
+            <path id="wirePolicy" class="flow-wire active-wire pulse-cyan" d="M 195,390 C 260,390 270,270 340,270" />
+
+            <!-- Bus Trunk: Gateway Core -> 3 Parallel Chambers -->
+            <path id="wireToChamber1" class="flow-wire active-wire pulse-cyan" d="M 450,230 C 500,230 520,130 570,130" />
+            <path id="wireToChamber2" class="flow-wire active-wire pulse-cyan" d="M 450,260 C 500,260 520,260 570,260" />
+            <path id="wireToChamber3" class="flow-wire active-wire pulse-cyan" d="M 450,290 C 500,290 520,390 570,390" />
+
+            <!-- Output Convergence: Chambers -> Outcome A (Green PASS) -->
+            <path id="wirePassTrunk" class="flow-wire active-wire pulse-emerald" d="M 770,130 C 840,130 860,180 910,180" />
+            <path id="wirePassChamber2" class="flow-wire active-wire pulse-emerald" d="M 770,260 C 840,260 860,190 910,190" />
+
+            <!-- Output Convergence: Chambers -> Outcome B (Red BLOCK) -->
+            <path id="wireBlockTrunk" class="flow-wire" d="M 770,140 C 820,140 850,360 910,360" />
+            <path id="wireBlockChamber2" class="flow-wire" d="M 770,270 C 820,270 850,370 910,370" />
+            <path id="wireBlockChamber3" class="flow-wire" d="M 770,390 C 830,390 860,380 910,380" />
+
+            <!-- Hardware Patch Sockets (Physical Connection Points) -->
+            <circle class="flow-port port-active" cx="195" cy="110" r="5" />
+            <circle class="flow-port port-active" cx="195" cy="250" r="5" />
+            <circle class="flow-port port-active" cx="195" cy="390" r="5" />
+            <circle class="flow-port port-active" cx="340" cy="250" r="6" />
+            <circle class="flow-port port-active" cx="450" cy="230" r="5" />
+            <circle class="flow-port port-active" cx="450" cy="260" r="5" />
+            <circle class="flow-port port-active" cx="450" cy="290" r="5" />
+            <circle class="flow-port port-active" cx="570" cy="130" r="5" />
+            <circle class="flow-port port-active" cx="570" cy="260" r="5" />
+            <circle class="flow-port port-active" cx="570" cy="390" r="5" />
+            <circle class="flow-port port-active" cx="770" cy="130" r="5" />
+            <circle class="flow-port port-active" cx="770" cy="260" r="5" />
+            <circle class="flow-port port-active" cx="770" cy="390" r="5" />
+            <circle class="flow-port port-active" cx="910" cy="185" r="6" />
+            <circle class="flow-port" cx="910" cy="370" r="6" id="portOutcomeBlock" />
+
+            <!-- Traveling Data Photons (Continuous ambient pulses) -->
+            <circle id="photon1" class="flow-photon" fill="#00f0ff">
+              <animateMotion dur="2.2s" repeatCount="indefinite" path="M 195,110 C 260,110 270,250 340,250" />
+            </circle>
+            <circle id="photon2" class="flow-photon" fill="#00f0ff">
+              <animateMotion dur="2.4s" repeatCount="indefinite" path="M 195,250 C 260,250 270,260 340,260" />
+            </circle>
+            <circle id="photonChamber1" class="flow-photon" fill="#00f0ff">
+              <animateMotion dur="1.9s" repeatCount="indefinite" path="M 450,230 C 500,230 520,130 570,130" />
+            </circle>
+            <circle id="photonChamber2" class="flow-photon" fill="#00f0ff">
+              <animateMotion dur="2.1s" repeatCount="indefinite" path="M 450,260 C 500,260 520,260 570,260" />
+            </circle>
+            <circle id="photonPass" class="flow-photon" fill="#10b981">
+              <animateMotion dur="1.7s" repeatCount="indefinite" path="M 770,130 C 840,130 860,180 910,180" />
+            </circle>
+            <circle id="photonBlock" class="flow-photon" fill="#f43f5e" opacity="0">
+              <animateMotion dur="1.5s" repeatCount="indefinite" path="M 770,140 C 820,140 850,360 910,360" />
+            </circle>
+
+            <!-- Dynamic Floating Data Packet Capsule (Tracks the active step) -->
+            <g id="dynamicDataPacket" transform="translate(195, 110)">
+              <rect x="-45" y="-14" width="90" height="28" rx="14" fill="#060911" stroke="var(--cyan)" stroke-width="2" filter="url(#glowCyan)" />
+              <circle cx="-30" cy="0" r="4" fill="var(--cyan)" />
+              <text id="dynamicPacketText" x="2" y="4" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">0.001 USDC</text>
+            </g>
+
+            <!-- ============================================== -->
+            <!-- 1. LEFT COLUMN: INPUT SOURCES                  -->
+            <!-- ============================================== -->
+
+            <!-- Node 1: Autonomous AI Agent -->
+            <g id="nodeAgent" class="flow-node-box stage-focus" onclick="selectFlowNode('agent')">
+              <rect x="25" y="70" width="170" height="80" rx="12" fill="url(#gradNodeDark)" stroke="var(--violet)" stroke-width="2" />
+              <circle cx="50" cy="110" r="16" fill="rgba(129, 140, 248, 0.15)" stroke="var(--violet)" stroke-width="1.5" />
+              <text x="50" y="115" font-family="'Font Awesome 6 Free'" font-weight="900" font-size="14" fill="var(--violet)" text-anchor="middle">&#xf544;</text>
+              <text x="75" y="102" font-family="Inter, sans-serif" font-weight="700" font-size="12" fill="#ffffff">AI Agent Fleet</text>
+              <text x="75" y="120" font-family="'JetBrains Mono', monospace" font-size="10" fill="var(--text-muted)">Claude / AutoGPT</text>
+              <text x="75" y="134" font-family="'JetBrains Mono', monospace" font-size="9" fill="var(--cyan)" id="nodeAgentIntent">Intent: Pay $0.001</text>
+            </g>
+
+            <!-- Node 2: Web Merchant Challenge -->
+            <g id="nodeMerchant" class="flow-node-box stage-focus" onclick="selectFlowNode('merchant')">
+              <rect x="25" y="210" width="170" height="80" rx="12" fill="url(#gradNodeDark)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" />
+              <circle cx="50" cy="250" r="16" fill="rgba(0, 240, 255, 0.15)" stroke="var(--cyan)" stroke-width="1.5" />
+              <text x="50" y="255" font-family="'Font Awesome 6 Free'" font-weight="900" font-size="14" fill="var(--cyan)" text-anchor="middle">&#xf57d;</text>
+              <text x="75" y="242" font-family="Inter, sans-serif" font-weight="700" font-size="12" fill="#ffffff">Web Merchant</text>
+              <text x="75" y="260" font-family="'JetBrains Mono', monospace" font-size="10" fill="var(--text-muted)">HTTP 402 Paywall</text>
+              <text x="75" y="274" font-family="'JetBrains Mono', monospace" font-size="9" fill="var(--cyan)" id="nodeMerchantUrl">paybox.sh/checkout</text>
+            </g>
+
+            <!-- Node 3: User Security Policy -->
+            <g id="nodePolicy" class="flow-node-box" onclick="selectFlowNode('policy')">
+              <rect x="25" y="350" width="170" height="80" rx="12" fill="url(#gradNodeDark)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" />
+              <circle cx="50" cy="390" r="16" fill="rgba(16, 185, 129, 0.15)" stroke="var(--emerald)" stroke-width="1.5" />
+              <text x="50" y="395" font-family="'Font Awesome 6 Free'" font-weight="900" font-size="14" fill="var(--emerald)" text-anchor="middle">&#xf3ed;</text>
+              <text x="75" y="382" font-family="Inter, sans-serif" font-weight="700" font-size="12" fill="#ffffff">User Policy Rules</text>
+              <text x="75" y="400" font-family="'JetBrains Mono', monospace" font-size="10" fill="var(--text-muted)">Max $1.00 USDC</text>
+              <text x="75" y="414" font-family="'JetBrains Mono', monospace" font-size="9" fill="var(--emerald)">Base Sepolia (84532)</text>
+            </g>
+
+            <!-- ============================================== -->
+            <!-- 2. CENTER-LEFT: IN-MEMORY AIRGAP GATEWAY CORE  -->
+            <!-- ============================================== -->
+            <g id="nodeGateway" class="flow-node-box" onclick="selectFlowNode('gateway')">
+              <rect x="340" y="195" width="110" height="130" rx="16" fill="url(#gradCoreGate)" stroke="var(--cyan)" stroke-width="2" filter="url(#glowCyan)" />
+              
+              <!-- Radar Sweep Scanner Circle -->
+              <circle cx="395" cy="245" r="28" fill="none" stroke="rgba(0, 240, 255, 0.25)" stroke-width="1.5" stroke-dasharray="14 18" class="radar-sweep" />
+              
+              <circle cx="395" cy="245" r="22" fill="rgba(0, 240, 255, 0.15)" stroke="var(--cyan)" stroke-width="2" />
+              <text x="395" y="252" font-family="'Font Awesome 6 Free'" font-weight="900" font-size="18" fill="var(--cyan)" text-anchor="middle">&#xf126;</text>
+              <text x="395" y="295" font-family="Inter, sans-serif" font-weight="800" font-size="11" fill="#ffffff" text-anchor="middle">AIRGAP CORE</text>
+              <text x="395" y="310" font-family="'JetBrains Mono', monospace" font-size="9" fill="var(--cyan)" text-anchor="middle">ZERO SSRF BUS</text>
+            </g>
+
+            <!-- ============================================== -->
+            <!-- 3. CENTER: 3 PARALLEL INSPECTION CHAMBERS      -->
+            <!-- ============================================== -->
+
+            <!-- Chamber A: URL Sentinel & Homoglyph Dissector -->
+            <g id="nodeChamber1" class="flow-node-box" onclick="selectFlowNode('chamber1')">
+              <rect x="570" y="85" width="200" height="90" rx="14" fill="url(#gradNodeDark)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" />
+              <circle cx="600" cy="130" r="18" fill="rgba(0, 240, 255, 0.15)" stroke="var(--cyan)" stroke-width="1.5" id="chamber1IconCircle" />
+              <text x="600" y="136" font-family="'Font Awesome 6 Free'" font-weight="900" font-size="15" fill="var(--cyan)" text-anchor="middle" id="chamber1Icon">&#xf6ff;</text>
+              <text x="630" y="118" font-family="Inter, sans-serif" font-weight="700" font-size="12" fill="#ffffff">1. URL Sentinel</text>
+              <text x="630" y="134" font-family="'JetBrains Mono', monospace" font-size="9.5" fill="var(--cyan)" id="chamber1Dissection">p · a · y · b · o · x · . · s · h</text>
+              <text x="630" y="154" font-family="'JetBrains Mono', monospace" font-size="9" fill="var(--emerald)" id="chamber1StatusText">Clean: ASCII Match</text>
+            </g>
+
+            <!-- Chamber B: Policy Engine & Amount Comparator -->
+            <g id="nodeChamber2" class="flow-node-box" onclick="selectFlowNode('chamber2')">
+              <rect x="570" y="215" width="200" height="90" rx="14" fill="url(#gradNodeDark)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" />
+              <circle cx="600" cy="260" r="18" fill="rgba(129, 140, 248, 0.15)" stroke="var(--violet)" stroke-width="1.5" id="chamber2IconCircle" />
+              <text x="600" y="266" font-family="'Font Awesome 6 Free'" font-weight="900" font-size="15" fill="var(--violet)" text-anchor="middle" id="chamber2Icon">&#xf24e;</text>
+              <text x="630" y="248" font-family="Inter, sans-serif" font-weight="700" font-size="12" fill="#ffffff">2. Policy Guard</text>
+              <text x="630" y="264" font-family="'JetBrains Mono', monospace" font-size="9.5" fill="var(--violet)" id="chamber2Comparator">0.001 USDC &lt;= 1.000 MAX</text>
+              <text x="630" y="284" font-family="'JetBrains Mono', monospace" font-size="9" fill="var(--emerald)" id="chamber2StatusText">In Limit: $0.001 &lt;= $1.00</text>
+            </g>
+
+            <!-- Chamber C: Privacy Redaction Conduit -->
+            <g id="nodeChamber3" class="flow-node-box" onclick="selectFlowNode('chamber3')">
+              <rect x="570" y="345" width="200" height="90" rx="14" fill="url(#gradNodeDark)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5" />
+              <circle cx="600" cy="390" r="18" fill="rgba(245, 158, 11, 0.15)" stroke="var(--amber)" stroke-width="1.5" />
+              <text x="600" y="396" font-family="'Font Awesome 6 Free'" font-weight="900" font-size="15" fill="var(--amber)" text-anchor="middle">&#xf21b;</text>
+              <text x="630" y="378" font-family="Inter, sans-serif" font-weight="700" font-size="12" fill="#ffffff">3. Privacy Sanitizer</text>
+              <text x="630" y="394" font-family="'JetBrains Mono', monospace" font-size="9.5" fill="var(--amber)" id="chamber3Filter">Query &amp; Tokens: STRIPPED</text>
+              <text x="630" y="414" font-family="'JetBrains Mono', monospace" font-size="9" fill="var(--cyan)" id="chamber3StatusText">Sanitized: 0 Leaks</text>
+            </g>
+
+            <!-- ============================================== -->
+            <!-- 4. RIGHT COLUMN: ADVISORY OUTCOME BRANCHES     -->
+            <!-- ============================================== -->
+
+            <!-- Outcome A: PASS (Top Right) -->
+            <g id="nodeOutcomePass" class="flow-node-box stage-pass" onclick="selectFlowNode('outcomePass')">
+              <!-- Celebratory Ripple Shockwave Ring -->
+              <circle id="safeShockwave" cx="940" cy="187" r="28" fill="none" stroke="var(--emerald)" stroke-width="2" class="shockwave-ring" opacity="0.8" />
+              
+              <rect x="910" y="140" width="195" height="95" rx="14" fill="url(#gradNodeDark)" stroke="var(--emerald)" stroke-width="2" filter="url(#glowEmerald)" />
+              <circle cx="940" cy="187" r="18" fill="rgba(16, 185, 129, 0.2)" stroke="var(--emerald)" stroke-width="1.5" />
+              <text x="940" y="193" font-family="'Font Awesome 6 Free'" font-weight="900" font-size="16" fill="var(--emerald)" text-anchor="middle">&#xf058;</text>
+              <text x="970" y="174" font-family="Inter, sans-serif" font-weight="800" font-size="13" fill="var(--emerald)">PASS · SAFE SIGN</text>
+              <text x="970" y="192" font-family="'JetBrains Mono', monospace" font-size="9.5" fill="#ffffff">Non-Custodial Proof</text>
+              <text x="970" y="208" font-family="'JetBrains Mono', monospace" font-size="9" fill="var(--emerald)" id="outcomePassReceipt">TX: 0x84fa...91c (Base)</text>
+            </g>
+
+            <!-- Outcome B: BLOCK (Bottom Right) -->
+            <g id="nodeOutcomeBlock" class="flow-node-box" onclick="selectFlowNode('outcomeBlock')">
+              <rect id="outcomeBlockRect" x="910" y="325" width="195" height="95" rx="14" fill="url(#gradNodeDark)" stroke="rgba(244, 63, 94, 0.35)" stroke-width="1.5" />
+              
+              <!-- Deployable Blast Shield Shutter Overlay -->
+              <rect id="blastHatchOverlay" x="910" y="325" width="195" height="95" rx="14" fill="url(#hazardStripes)" opacity="0" pointer-events="none" />
+              
+              <circle cx="940" cy="372" r="18" fill="rgba(244, 63, 94, 0.15)" stroke="var(--rose)" stroke-width="1.5" id="outcomeBlockIconCircle" />
+              <text x="940" y="378" font-family="'Font Awesome 6 Free'" font-weight="900" font-size="16" fill="var(--rose)" text-anchor="middle">&#xf05e;</text>
+              <text x="970" y="359" font-family="Inter, sans-serif" font-weight="800" font-size="13" fill="var(--rose)" id="outcomeBlockTitle">BLOCK · CIRCUIT</text>
+              <text x="970" y="377" font-family="'JetBrains Mono', monospace" font-size="9.5" fill="#ffffff" id="outcomeBlockSub">Blast Shield Standby</text>
+              <text x="970" y="393" font-family="'JetBrains Mono', monospace" font-size="9" fill="var(--rose)" id="outcomeBlockZero">Zero Satoshis Lost</text>
+            </g>
+          </svg>
+        </div>
+
+        <!-- Live Explainer Readout Panel (Synchronized with selected node/scenario) -->
+        <div class="flow-explainer-readout">
+          <div class="explainer-left">
+            <h4 id="explainerHeading">
+              <i class="fa-solid fa-circle-nodes" style="color:var(--cyan)"></i>
+              <span>Inspection Circuit: Legitimate Merchant Passed</span>
+            </h4>
+            <p id="explainerText">
+              When an autonomous agent receives an x402 payment challenge, the request does NOT execute blindly. It travels along the physical in-memory bus into PayGuard's 3 parallel chambers. Gate 1 confirms the domain has no Cyrillic homoglyphs. Gate 2 confirms the $0.001 USDC fee is within the operator's $1.00 ceiling. The signal routes cleanly down the green conduit to Outcome A, where the agent wallet safely signs.
+            </p>
+            <div class="explainer-highlight" id="explainerHighlight">
+              <strong>Non-Custodial Invariant:</strong> At no point did PayGuard touch wallet private keys or seed phrases. PayGuard simply returned a signed PASS verdict, allowing the host runtime to authorize the transaction.
             </div>
           </div>
 
-          <!-- Right: Deep Plain-English Explanation -->
-          <div class="sim-explanation-panel">
+          <div class="explainer-right">
             <div>
-              <div class="explanation-badge-step" id="explainerBadge">STATION 1 · INBOUND AGENT INTENT</div>
-              <h3 class="explanation-title" id="explainerTitle">Agent Intercepts HTTP 402 Payment Challenge</h3>
-              <p class="explanation-body" id="explainerBody">
-                An autonomous AI agent encounters a paywalled dataset or compute resource on the web. The merchant server returns an HTTP 402 with cryptographic payment requirements. Before the agent signs anything with its wallet, PayGuard intercepts the raw intent.
-              </p>
-              <div class="explanation-callout" id="explainerCallout">
-                <strong>Why this matters to you:</strong> In traditional autonomous agent runtimes, agents blindly follow links provided by untrusted web pages, leaving their crypto wallets vulnerable to automated balance drains.
+              <div style="font-size:0.75rem; font-weight:700; color:var(--cyan); text-transform:uppercase; margin-bottom:8px;">
+                <i class="fa-solid fa-microchip"></i> Bus Telemetry
+              </div>
+              <div class="telemetry-row">
+                <span class="telemetry-label">Active Flow Conduit:</span>
+                <span class="telemetry-val" id="telConduit" style="color:var(--emerald)">GREEN (VERIFIED)</span>
+              </div>
+              <div class="telemetry-row">
+                <span class="telemetry-label">SSRF Outbound TCP:</span>
+                <span class="telemetry-val" style="color:var(--emerald)">0 PACKETS (AIRGAP)</span>
+              </div>
+              <div class="telemetry-row">
+                <span class="telemetry-label">Homoglyph Risk:</span>
+                <span class="telemetry-val" id="telHomoglyph" style="color:var(--emerald)">0.0% (ASCII MATCH)</span>
+              </div>
+              <div class="telemetry-row">
+                <span class="telemetry-label">Budget Delta:</span>
+                <span class="telemetry-val" id="telBudget" style="color:var(--emerald)">-$0.999 UNDER LIMIT</span>
               </div>
             </div>
-
-            <div class="sim-footer-metrics">
-              <span>Zero SSRF: <strong id="metricSsrf">VERIFIED (0 OUTBOUND)</strong></span>
-              <span>Memory Footprint: <strong id="metricMem">3.8 KB</strong></span>
-              <span>Execution Time: <strong id="metricTime">0.00 ms</strong></span>
+            <div style="margin-top:12px; font-size:0.7rem; color:var(--text-dim); font-family:var(--font-mono);">
+              Click any node card on the diagram above to inspect individual chamber internals.
             </div>
           </div>
         </div>
@@ -2362,7 +2476,7 @@
             <div class="studio-card">
               <div class="card-header-bar">
                 <span class="card-title"><i class="fa-solid fa-gavel" style="color:var(--emerald)"></i> 3. Advisory Verdict</span>
-                <span class="card-tag">ADVISORY RESULT</span>
+                <span class="card-tag">SIMULATED SCENARIO</span>
               </div>
 
               <div class="verdict-cockpit">
@@ -2371,32 +2485,32 @@
                     <i class="fa-solid fa-circle-check"></i>
                   </div>
                   <div class="verdict-main-text">
-                    <h4 id="scenarioVerdictText" style="color:var(--emerald)">PASS · SAFE TO SIGN</h4>
-                    <p id="scenarioRiskText">Risk Level: NONE (0/100)</p>
+                    <h4 id="scenarioVerdictText" style="color:var(--emerald)">PASS · POLICY COMPLIANT</h4>
+                    <p id="scenarioRiskText">Risk Level: LOW</p>
                   </div>
                 </div>
 
                 <!-- Animated Risk Score Meter Bar -->
                 <div class="risk-meter-wrapper">
                   <div class="meter-label-row">
-                    <span>Threat Confidence Score</span>
-                    <span id="riskScoreLabel" style="color:var(--emerald)">0 / 100</span>
+                    <span>Simulated Risk Indicator</span>
+                    <span id="riskScoreLabel" style="color:var(--emerald)">LOW</span>
                   </div>
                   <div class="meter-track">
-                    <div class="meter-fill" id="riskMeterFill" style="width: 0%; background: var(--emerald);"></div>
+                    <div class="meter-fill" id="riskMeterFill" style="width: 10%; background: var(--emerald);"></div>
                   </div>
                 </div>
 
                 <div class="plain-english-box">
-                  <strong>What this means for the user:</strong>
+                  <strong>What this means for the agent:</strong>
                   <span id="scenarioPlainDesc">
-                    The requested checkout domain exactly matches verified PayBox infrastructure. Amount (0.001 USDC) is well within the user's $1.00 safety ceiling. No Cyrillic or lookalike character spoofing detected.
+                    The requested checkout domain matches configured expected domain 'paybox.sh'. Amount (0.001 USDC) satisfies the policy ceiling. No lookalike homoglyphs detected.
                   </span>
                 </div>
 
                 <div class="guidance-box" id="scenarioGuidance" style="background:rgba(16, 185, 129, 0.1); border:1px solid rgba(16, 185, 129, 0.25); color:#6ee7b7;">
                   <i class="fa-solid fa-lightbulb"></i>
-                  <span id="scenarioGuidanceText">Action for Agent: Safe to proceed. Agent wallet may sign the x402 payment proof.</span>
+                  <span id="scenarioGuidanceText">Advisory: Policy rules passed. Calling agent runtime may proceed if configured to trust this merchant.</span>
                 </div>
               </div>
             </div>
@@ -2405,173 +2519,13 @@
       </div>
     </section>
 
-    <!-- SECTION 2: SYSTEM HIERARCHY -->
-    <section id="system-hierarchy" class="container" style="padding: 4rem 1.5rem;">
-      <div class="section-header">
-        <span class="section-eyebrow">Visual Architecture & Boundaries</span>
-        <h2 class="section-title">The PayGuard Security Hierarchy</h2>
-        <p class="section-subtitle">
-          How does PayGuard fit between an autonomous AI agent, untrusted web merchants, and the Web3 blockchain? Follow the glowing data conduit below.
-        </p>
-      </div>
-
-      <div class="hierarchy-container">
-        <!-- Glowing vertical circuit cable with traveling light photon -->
-        <div class="circuit-conduit">
-          <div class="traveling-photon"></div>
-        </div>
-
-        <div class="hierarchy-tiers">
-          <!-- Tier 0: Upstream AI Agent Layer -->
-          <div class="hierarchy-tier-card" onclick="highlightTier(this)">
-            <div class="tier-node-indicator"><i class="fa-solid fa-brain"></i></div>
-            <div class="tier-content-grid">
-              <div class="tier-header-info">
-                <span class="tier-level-badge">TIER 0 · UPSTREAM</span>
-                <h3>AI Agent & Task Intent</h3>
-                <p class="tier-role-desc">
-                  An autonomous agent (Claude, GPT-4, LangChain, or custom autonomous runtime) executes an objective and encounters a paywalled API, digital dataset, or checkout link.
-                </p>
-              </div>
-              <div class="tier-submodules">
-                <div class="submodule-pill">
-                  <span class="submodule-title"><i class="fa-solid fa-link"></i> Target URL Discovery</span>
-                  <span class="submodule-detail">Agent finds external payment link</span>
-                </div>
-                <div class="submodule-pill">
-                  <span class="submodule-title"><i class="fa-solid fa-receipt"></i> x402 Challenge Receipt</span>
-                  <span class="submodule-detail">HTTP 402 + payment requirement</span>
-                </div>
-                <div class="submodule-pill">
-                  <span class="submodule-title"><i class="fa-solid fa-triangle-exclamation" style="color:var(--amber)"></i> High Risk Exposure</span>
-                  <span class="submodule-detail" style="color:var(--amber)">Untrusted links could drain wallet</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Tier 1: PayGuard URL Sentinel (Anti-Phishing Layer) -->
-          <div class="hierarchy-tier-card" onclick="highlightTier(this)">
-            <div class="tier-node-indicator"><i class="fa-solid fa-shield-virus"></i></div>
-            <div class="tier-content-grid">
-              <div class="tier-header-info">
-                <span class="tier-level-badge">TIER 1 · GATEWAY</span>
-                <h3>URL Sentinel (Zero SSRF)</h3>
-                <p class="tier-role-desc">
-                  Inspects target URLs purely locally in-memory. It will <strong>never fetch or make network connections to the target</strong>, eliminating Server-Side Request Forgery (SSRF) entirely.
-                </p>
-              </div>
-              <div class="tier-submodules">
-                <div class="submodule-pill">
-                  <span class="submodule-title"><i class="fa-solid fa-font"></i> Punycode & IDN Homoglyphs</span>
-                  <span class="submodule-detail">Detects Cyrillic "а" in "pаybox.sh"</span>
-                </div>
-                <div class="submodule-pill">
-                  <span class="submodule-title"><i class="fa-solid fa-tags"></i> Suffix & Sibling Spoofs</span>
-                  <span class="submodule-detail">Blocks "paybox.sh.attacker.com"</span>
-                </div>
-                <div class="submodule-pill">
-                  <span class="submodule-title"><i class="fa-solid fa-masks-car"></i> Brand Impersonation Rules</span>
-                  <span class="submodule-detail">Flags evilpaybox, fake-paybox</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Tier 2: Payment Policy Guard (Constraint Enforcement) -->
-          <div class="hierarchy-tier-card" onclick="highlightTier(this)">
-            <div class="tier-node-indicator"><i class="fa-solid fa-scale-balanced"></i></div>
-            <div class="tier-content-grid">
-              <div class="tier-header-info">
-                <span class="tier-level-badge">TIER 2 · POLICY</span>
-                <h3>Payment Policy Guard</h3>
-                <p class="tier-role-desc">
-                  Compares proposed merchant payment terms against the user's explicit policy rules. If a merchant attempts to charge 100x the agreed price or switch network chains, it is blocked immediately.
-                </p>
-              </div>
-              <div class="tier-submodules">
-                <div class="submodule-pill">
-                  <span class="submodule-title"><i class="fa-solid fa-coins"></i> Atomic Amount Ceiling</span>
-                  <span class="submodule-detail">Strict limit: e.g. Max 10,000 units</span>
-                </div>
-                <div class="submodule-pill">
-                  <span class="submodule-title"><i class="fa-solid fa-network-wired"></i> Blockchain Network Guard</span>
-                  <span class="submodule-detail">Enforces Base Sepolia (eip155:84532)</span>
-                </div>
-                <div class="submodule-pill">
-                  <span class="submodule-title"><i class="fa-solid fa-clock"></i> Expiration Timeout Check</span>
-                  <span class="submodule-detail">Rejects stale or replay challenges</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Tier 3: Privacy Redaction & Threat Intel -->
-          <div class="hierarchy-tier-card" onclick="highlightTier(this)">
-            <div class="tier-node-indicator"><i class="fa-solid fa-user-secret"></i></div>
-            <div class="tier-content-grid">
-              <div class="tier-header-info">
-                <span class="tier-level-badge">TIER 3 · PRIVACY</span>
-                <h3>Privacy Sanitizer & Intel</h3>
-                <p class="tier-role-desc">
-                  Before performing any threat intelligence checks, PayGuard strips high-entropy tokens, passwords, query parameters, and session keys from URLs so sensitive credentials never leak.
-                </p>
-              </div>
-              <div class="tier-submodules">
-                <div class="submodule-pill">
-                  <span class="submodule-title"><i class="fa-solid fa-eraser"></i> Sensitive Path Redaction</span>
-                  <span class="submodule-detail">Replaces /reset/token123 with [REDACTED]</span>
-                </div>
-                <div class="submodule-pill">
-                  <span class="submodule-title"><i class="fa-solid fa-filter"></i> Query Parameter Stripper</span>
-                  <span class="submodule-detail">Strips ?api_key=sk_live_...</span>
-                </div>
-                <div class="submodule-pill">
-                  <span class="submodule-title"><i class="fa-solid fa-cloud-bolt"></i> Google Web Risk Prefix</span>
-                  <span class="submodule-detail">Checks known malware/phishing lists</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Tier 4: Advisory Verdict & Custody Airgap -->
-          <div class="hierarchy-tier-card" onclick="highlightTier(this)">
-            <div class="tier-node-indicator"><i class="fa-solid fa-lock"></i></div>
-            <div class="tier-content-grid">
-              <div class="tier-header-info">
-                <span class="tier-level-badge">TIER 4 · NON-CUSTODIAL BOUNDARY</span>
-                <h3>Advisory Verdict & Execution</h3>
-                <p class="tier-role-desc">
-                  PayGuard returns a clean advisory verdict (<code>PASS</code>, <code>BLOCK</code>, or <code>REVIEW</code>). <strong>PayGuard never holds private keys, seed phrases, or signs payments.</strong> The agent's secure host runtime retains full custody.
-                </p>
-              </div>
-              <div class="tier-submodules">
-                <div class="submodule-pill">
-                  <span class="submodule-title"><i class="fa-solid fa-circle-check" style="color:var(--emerald)"></i> PASS Verdict</span>
-                  <span class="submodule-detail" style="color:var(--emerald)">Merchant meets all policies · Safe to sign</span>
-                </div>
-                <div class="submodule-pill">
-                  <span class="submodule-title"><i class="fa-solid fa-circle-xmark" style="color:var(--rose)"></i> BLOCK Verdict</span>
-                  <span class="submodule-detail" style="color:var(--rose)">Violation detected · Transaction aborted</span>
-                </div>
-                <div class="submodule-pill">
-                  <span class="submodule-title"><i class="fa-solid fa-shield"></i> 100% Non-Custodial</span>
-                  <span class="submodule-detail">Zero key exposure · Zero liability</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- SECTION 3: STEP-BY-STEP "HOW IT ACTUALLY WORKS" -->
+    <!-- STEP-BY-STEP "HOW IT ACTUALLY WORKS" -->
     <section id="how-it-works" class="container" style="padding: 4rem 1.5rem;">
       <div class="section-header">
         <span class="section-eyebrow">Lifecycle Walkthrough</span>
-        <h2 class="section-title">What Happens in a 40-Millisecond Check</h2>
+        <h2 class="section-title">What Happens During Pre-Flight Analysis</h2>
         <p class="section-subtitle">
-          See the exact sequence of events when an AI agent asks PayGuard to evaluate a checkout intent.
+          See the sequence of events when an AI agent asks PayGuard to evaluate an x402 checkout intent.
         </p>
       </div>
 
@@ -2579,10 +2533,10 @@
         <!-- Step 1 -->
         <div class="flow-step-card">
           <div class="step-number-tag">01</div>
-          <span class="step-time-badge">0ms · TRIGGER</span>
+          <span class="step-time-badge">TRIGGER</span>
           <h4><i class="fa-solid fa-satellite-dish" style="color:var(--cyan)"></i> Intent Intercept</h4>
           <p>
-            The calling AI agent or payment wallet receives an HTTP 402 challenge with payment requirements and forwards the payload to PayGuard.
+            The calling AI agent or payment runtime intercepts an HTTP 402 challenge and forwards the parameters to PayGuard before signing.
           </p>
           <div class="step-mini-code">POST /api/analyze-url<br>{"url": "https://paybox.sh/..."}</div>
         </div>
@@ -2590,7 +2544,7 @@
         <!-- Step 2 -->
         <div class="flow-step-card">
           <div class="step-number-tag">02</div>
-          <span class="step-time-badge">12ms · AIRGAP</span>
+          <span class="step-time-badge">AIRGAP</span>
           <h4><i class="fa-solid fa-magnifying-glass-chart" style="color:var(--amber)"></i> Static Dissection</h4>
           <p>
             URL is parsed into domain, scheme, path, and queries purely in RAM. Punycode is decoded, character sets are checked, and suffix attacks are tested.
@@ -2601,7 +2555,7 @@
         <!-- Step 3 -->
         <div class="flow-step-card">
           <div class="step-number-tag">03</div>
-          <span class="step-time-badge">24ms · POLICY</span>
+          <span class="step-time-badge">POLICY</span>
           <h4><i class="fa-solid fa-file-shield" style="color:var(--violet)"></i> Policy Comparator</h4>
           <p>
             Requested amount, token contract address, recipient wallet, and network chain ID are strictly compared against the user's safety ceiling.
@@ -2612,17 +2566,17 @@
         <!-- Step 4 -->
         <div class="flow-step-card">
           <div class="step-number-tag">04</div>
-          <span class="step-time-badge">38ms · VERDICT</span>
+          <span class="step-time-badge">VERDICT</span>
           <h4><i class="fa-solid fa-circle-check" style="color:var(--emerald)"></i> Advisory Delivery</h4>
           <p>
-            Structured verdict is returned to the agent runtime. If PASS, the agent wallet signs. If BLOCK, the agent halts and writes an incident audit log.
+            A structured verdict is returned to the agent runtime. The calling agent can proceed with signing if PASS, or abort execution if BLOCK.
           </p>
-          <div class="step-mini-code">{"verdict": "PASS",<br> "riskLevel": "NONE"}</div>
+          <div class="step-mini-code">{"verdict": "EXPECTED_DOMAIN_MATCH",<br> "riskLevel": "LOW"}</div>
         </div>
       </div>
     </section>
 
-    <!-- SECTION 4: LIVE INTERACTIVE LAB -->
+    <!-- LIVE INTERACTIVE LAB -->
     <section id="live-lab" class="container" style="padding: 4rem 1.5rem;">
       <div class="section-header">
         <span class="section-eyebrow">Hands-On Testing</span>
@@ -2654,7 +2608,7 @@
           <button class="preset-chip chip-bad" onclick="setLabPreset('https://paybox.sh.attacker-domain.com/login', 'paybox.sh')">
             <i class="fa-solid fa-tags" style="color:var(--rose)"></i> Suffix Spoof
           </button>
-          <button class="preset-chip" onclick="setLabPreset('https://shop.example/pay?user_key=sk_live_secret99887766', 'shop.example')">
+          <button class="preset-chip" onclick="setLabPreset('https://shop.example/pay?user_key=sk_live_secret99887766', '')">
             <i class="fa-solid fa-user-secret" style="color:var(--cyan)"></i> Secret Token Leak
           </button>
         </div>
@@ -2666,13 +2620,13 @@
       </div>
     </section>
 
-    <!-- SECTION 5: 6 DEFENSIVE PILLARS -->
+    <!-- 6 DEFENSIVE PILLARS -->
     <section id="pillars" class="container" style="padding: 4rem 1.5rem;">
       <div class="section-header">
-        <span class="section-eyebrow">Enterprise Guarantees</span>
+        <span class="section-eyebrow">Architectural Principles</span>
         <h2 class="section-title">Engineered for Autonomous Trust</h2>
         <p class="section-subtitle">
-          Six foundational architectural pillars that make PayGuard the ideal security gateway for autonomous AI fleets.
+          Six foundational architectural pillars that make PayGuard a dedicated pre-flight security gateway for AI agents.
         </p>
       </div>
 
@@ -2681,15 +2635,15 @@
           <div class="feature-icon-box"><i class="fa-solid fa-ban"></i></div>
           <h4>Zero-Custody Boundary</h4>
           <p>
-            PayGuard never requests, stores, or logs wallet seed phrases, private keys, or passwords. Total non-custodial design means zero liability for your infrastructure.
+            PayGuard never requests, stores, or logs wallet seed phrases, private keys, or passwords. Strictly non-custodial by design.
           </p>
         </div>
 
         <div class="feature-card">
           <div class="feature-icon-box"><i class="fa-solid fa-laptop-code"></i></div>
-          <h4>SSRF-Proof Parsing</h4>
+          <h4>SSRF-Resistant URL Parsing</h4>
           <p>
-            Evaluated purely in-memory via static lexical parsing. PayGuard will never open, fetch, or ping target URLs, preventing malicious internal network probing.
+            Evaluated purely in-memory via static lexical parsing. PayGuard does not fetch or ping target URLs during static analysis, preventing internal SSRF probes.
           </p>
         </div>
 
@@ -2697,15 +2651,15 @@
           <div class="feature-icon-box"><i class="fa-solid fa-font-awesome"></i></div>
           <h4>Punycode Sentinel</h4>
           <p>
-            Detects Internationalized Domain Name (IDN) homoglyph attacks that use identical-looking Cyrillic or Greek characters to trick both humans and LLM vision models.
+            Detects Internationalized Domain Name (IDN) homoglyph attacks that use identical-looking Cyrillic or Greek characters to deceive autonomous agents.
           </p>
         </div>
 
         <div class="feature-card">
           <div class="feature-icon-box"><i class="fa-solid fa-coins"></i></div>
-          <h4>x402 Protocol v2 Native</h4>
+          <h4>x402 Protocol v2 Ready</h4>
           <p>
-            Built from the ground up for the x402 open payment protocol and PayBox Bazaar discovery schemas, enforcing atomic payment compliance on Base Sepolia.
+            Built for the x402 open payment protocol specification, supporting pre-flight evaluation of atomic payment limits and chain IDs.
           </p>
         </div>
 
@@ -2713,21 +2667,21 @@
           <div class="feature-icon-box"><i class="fa-solid fa-user-shield"></i></div>
           <h4>Privacy-Safe Redaction</h4>
           <p>
-            All passwords, session tokens, reset keys, and high-entropy path segments are automatically redacted before external threat intelligence queries are dispatched.
+            All passwords, session tokens, reset keys, and high-entropy path segments are automatically redacted before any external threat intelligence lookup.
           </p>
         </div>
 
         <div class="feature-card">
           <div class="feature-icon-box"><i class="fa-solid fa-gauge-high"></i></div>
-          <h4>Sub-50ms Latency</h4>
+          <h4>Low-Overhead Execution</h4>
           <p>
-            Pure JavaScript implementation with zero heavy external dependencies. Evaluates URLs and policies in milliseconds without slowing down your agent workflows.
+            Pure JavaScript implementation with zero heavy native dependencies. Evaluates URLs and policies in milliseconds locally in-process.
           </p>
         </div>
       </div>
     </section>
 
-    <!-- SECTION 6: COMPARISON MATRIX -->
+    <!-- COMPARISON MATRIX -->
     <section class="container" style="padding: 4rem 1.5rem;">
       <div class="section-header">
         <span class="section-eyebrow">Clear Differentiation</span>
@@ -2755,10 +2709,10 @@
               <td class="highlight-col"><span class="badge-check"><i class="fa-solid fa-shield-check"></i> Strictly Non-Custodial</span></td>
             </tr>
             <tr>
-              <td>SSRF Protection (Zero outbound fetch)</td>
+              <td>SSRF Protection (Target URL Fetch)</td>
               <td><span class="badge-x"><i class="fa-solid fa-xmark"></i> Fetches target page</span></td>
               <td><span class="badge-x"><i class="fa-solid fa-xmark"></i> Not applicable</span></td>
-              <td class="highlight-col"><span class="badge-check"><i class="fa-solid fa-check"></i> 100% In-Memory Parsing</span></td>
+              <td class="highlight-col"><span class="badge-check"><i class="fa-solid fa-check"></i> Local In-Memory Parse</span></td>
             </tr>
             <tr>
               <td>Homoglyph & Punycode Deobfuscation</td>
@@ -2789,7 +2743,7 @@
       </div>
     </section>
 
-    <!-- SECTION 7: FAQ ACCORDION -->
+    <!-- FAQ ACCORDION -->
     <section id="faq" class="container" style="padding: 4rem 1.5rem;">
       <div class="section-header">
         <span class="section-eyebrow">Clear Answers for Normal Users</span>
@@ -2852,7 +2806,7 @@
       </div>
     </section>
 
-    <!-- SECTION 8: BOTTOM CTA BANNER -->
+    <!-- BOTTOM CTA BANNER -->
     <section class="container">
       <div class="cta-banner">
         <h2 class="cta-title">Ready to Shield Your AI Agent Payments?</h2>
@@ -2892,11 +2846,11 @@
       <div class="footer-col">
         <h5>Interfaces</h5>
         <ul class="footer-links">
-          <li><a href="#visual-simulation"><i class="fa-solid fa-play-circle" style="color:var(--cyan)"></i> Live Visualizer</a></li>
+          <li><a href="#interconnected-flow"><i class="fa-solid fa-diagram-project" style="color:var(--cyan)"></i> Interconnected Flow</a></li>
           <li><a href="/dashboard"><i class="fa-solid fa-terminal"></i> Operator Console</a></li>
           <li><a href="#sentinel-studio"><i class="fa-solid fa-desktop"></i> Sentinel Studio</a></li>
           <li><a href="#live-lab"><i class="fa-solid fa-flask"></i> Interactive Lab</a></li>
-          <li><a href="#system-hierarchy"><i class="fa-solid fa-sitemap"></i> System Hierarchy</a></li>
+          <li><a href="#how-it-works"><i class="fa-solid fa-route"></i> Lifecycle</a></li>
         </ul>
       </div>
 
@@ -3018,318 +2972,206 @@
     }, 2800);
 
     // =========================================================
-    // 3. ANIMATED EXPLANATORY VISUALIZATION ENGINE
+    // 3. INTERCONNECTED FLOW ENGINE LOGIC (User Ask)
     // =========================================================
-    let currentSimStation = 1;
-    let simMode = 'safe'; // 'safe' | 'homoglyph' | 'drain'
-    let isSimPlaying = true;
-    let simTimer = null;
+    let currentFlowScenario = 'safe';
 
-    const SIM_CONTENT = {
+    const FLOW_SCENARIOS = {
       safe: {
-        domain: "paybox.sh",
-        tokens: ["h","t","t","p","s",":","/","/","p","a","y","b","o","x",".","s","h"],
-        amount: "1,000 units (0.001 USDC)",
-        network: "eip155:84532",
-        stations: {
-          1: {
-            title: "Agent Intercepts HTTP 402 Challenge",
-            body: "An autonomous agent receives an HTTP 402 challenge from a paywalled API. Before signing anything, PayGuard intercepts the URL, proposed network (Base Sepolia), and requested payment amount.",
-            callout: "The agent's private keys stay untouched inside its host wallet. PayGuard acts as a pure in-memory filter.",
-            chips: ["Protocol: x402 v2", "Asset: USDC (0x036C...)", "Amount: 0.001 USDC"],
-            time: "0.00 ms",
-            mem: "3.8 KB",
-            status: "pass"
-          },
-          2: {
-            title: "SSRF Airgap: Zero Network Outbound",
-            body: "PayGuard statically decomposes the URL in-memory using URL grammar parsers. It guarantees zero HTTP requests to the target URL, preventing Server-Side Request Forgery (SSRF) against internal cloud infrastructure.",
-            callout: "Malicious URLs often target AWS metadata (169.254.169.254). PayGuard never fetches target URLs, rendering SSRF impossible.",
-            chips: ["Remote Ping: BLOCKED", "Airgap: 100%", "Target Fetch: 0 bytes"],
-            time: "8.40 ms",
-            mem: "4.2 KB",
-            status: "pass"
-          },
-          3: {
-            title: "Homoglyph & Punycode Deobfuscation",
-            body: "The domain 'paybox.sh' is parsed into unicode code points. All characters are ASCII Latin [U+0061..U+007A]. No Cyrillic, Greek, or Arabic lookalike spoofing detected. Domain matches verified PayBox infrastructure.",
-            callout: "Lookalike characters that trick LLM visual embeddings or human eyes are dissected at the binary code point level.",
-            chips: ["Punycode: None", "Script: Latin ASCII", "Spoof Risk: 0.0%"],
-            time: "18.20 ms",
-            mem: "4.8 KB",
-            status: "pass"
-          },
-          4: {
-            title: "Cryptographic Policy Ceiling Enforcement",
-            body: "Proposed payment (0.001 USDC) is compared to the user's hard ceiling ($1.00 max atomic amount). Network ID 'eip155:84532' matches authorized Base Sepolia testnet rules.",
-            callout: "A malicious contract cannot request more than your configured budget. If an agent tries to overpay, it is rejected before signing.",
-            chips: ["Ceiling: $1.00", "Proposed: $0.001", "Constraint: PASS"],
-            time: "26.50 ms",
-            mem: "5.1 KB",
-            status: "pass"
-          },
-          5: {
-            title: "Advisory Verdict: Safe to Sign (PASS)",
-            body: "PayGuard returns an advisory verdict: PASS. The host agent wallet is cleared to sign the x402 payment proof. All security gates verified in under 38 milliseconds.",
-            callout: "Non-custodial guarantee fulfilled: PayGuard never executes payments directly. The host runtime retains sole signing power.",
-            chips: ["Verdict: PASS", "Risk Level: NONE", "Total Latency: 34.2 ms"],
-            time: "34.20 ms",
-            mem: "5.4 KB",
-            status: "pass"
-          }
-        }
+        statusText: "ACTIVE CIRCUIT · VERIFIED LEGITIMATE FLOW",
+        statusColor: "var(--emerald)",
+        heading: "1. Legitimate Merchant: In-Memory Verification & Safe Signature",
+        text: "The Autonomous Agent receives a 0.001 USDC challenge from paybox.sh. Both inputs converge in the In-Memory Gateway. The URL Sentinel confirms clean Latin ASCII code points. The Policy Engine confirms 0.001 USDC is well within the $1.00 ceiling. The green conduit illuminates, routing directly to Outcome A where the agent wallet signs safely on Base Sepolia.",
+        highlight: "Result: Zero risk of wallet draining. Complete cryptographic matching verified in 34ms.",
+        telConduit: "GREEN (PASS / SAFE)",
+        telConduitColor: "var(--emerald)",
+        telHomoglyph: "0.0% (CLEAN ASCII)",
+        telHomoglyphColor: "var(--emerald)",
+        telBudget: "-$0.999 (SAFE UNDER LIMIT)",
+        telBudgetColor: "var(--emerald)",
+        chamber1Text: "Clean: ASCII Match",
+        chamber1Color: "var(--emerald)",
+        chamber2Text: "In Limit: $0.001 <= $1.00",
+        chamber2Color: "var(--emerald)",
+        wirePassClass: "flow-wire active-wire pulse-emerald",
+        wireBlockClass: "flow-wire",
+        photonPassOpacity: "1",
+        photonBlockOpacity: "0",
+        outcomePassStroke: "var(--emerald)",
+        outcomeBlockStroke: "rgba(255,255,255,0.12)"
       },
-      homoglyph: {
-        domain: "pаybox.sh (Cyrillic а)",
-        tokens: ["h","t","t","p","s",":","/","/","p","а","y","b","o","x",".","s","h"],
-        amount: "1,000 units (0.001 USDC)",
-        network: "eip155:84532",
-        stations: {
-          1: {
-            title: "Agent Intercepts Deceptive Link",
-            body: "The agent received a payment checkout link from an untrusted web page. To human eyes and multimodal LLMs, 'pаybox.sh' appears identical to the official PayBox domain.",
-            callout: "Phishing attackers use lookalikes to trick autonomous bots into sending payments to attacker-owned wallets.",
-            chips: ["Raw String: https://pаybox.sh/pay", "Apparent Target: PayBox"],
-            time: "0.00 ms",
-            mem: "3.8 KB",
-            status: "pass"
-          },
-          2: {
-            title: "SSRF Airgap: Zero Network Fetch",
-            body: "Even though the domain is malicious, PayGuard parses it in RAM without dialing outbound connections. The attacker receives zero telemetry or network pingback.",
-            callout: "The attacker cannot fingerprint the agent's IP address or probe internal subnet ports.",
-            chips: ["Outbound TCP: 0", "Airgap: SECURE", "Leakage: 0"],
-            time: "7.90 ms",
-            mem: "4.1 KB",
-            status: "pass"
-          },
-          3: {
-            title: "CRITICAL: Cyrillic Homoglyph Intercepted",
-            body: "ALARM: Character at position 10 is NOT Latin 'a' (U+0061). It is Cyrillic Small Letter 'а' (U+0430). Punycode representation is 'xn--pybox-7qa.sh'. Immediate brand impersonation flag!",
-            callout: "This is a classic IDN Homoglyph attack. PayGuard immediately triggers an alert and halts the pipeline.",
-            chips: ["Character: U+0430 Cyrillic", "Punycode: xn--pybox-7qa.sh", "Impersonator: CONFIRMED"],
-            time: "14.60 ms",
-            mem: "4.9 KB",
-            status: "blocked"
-          },
-          4: {
-            title: "Policy Evaluation Halted",
-            body: "Because Gate 3 identified active malicious domain spoofing, payment intent evaluation is aborted. No further processing is performed for compromised targets.",
-            callout: "Prevents unnecessary compute on confirmed attack vectors.",
-            chips: ["Pipeline State: ABORTED", "Threat Score: 95/100"],
-            time: "15.10 ms",
-            mem: "4.9 KB",
-            status: "blocked"
-          },
-          5: {
-            title: "Advisory Verdict: Hard BLOCK",
-            body: "PayGuard delivers an advisory BLOCK verdict. The agent host runtime aborts the transaction immediately and writes a high-priority incident audit log.",
-            callout: "Result: Zero satoshis lost. The attacker's impersonation trap failed completely.",
-            chips: ["Verdict: BLOCK", "Reason: HOMOGLYPH_IMPERSONATION", "Action: ABORT"],
-            time: "15.80 ms",
-            mem: "5.0 KB",
-            status: "blocked"
-          }
-        }
+      phish: {
+        statusText: "THREAT INTERCEPTED · CYRILLIC HOMOGLYPH SPOOF BLOCKED",
+        statusColor: "var(--rose)",
+        heading: "2. Cyrillic Homoglyph Attack: Brand Impersonator Neutralized",
+        text: "The web merchant URL contains a deceptive lookalike domain: 'pаybox.sh'. To human eyes and LLMs it looks authentic, but Chamber 1 (URL Sentinel) decodes Punycode and catches Cyrillic Small Letter 'а' (U+0430). The alarm trips immediately: the green conduit shuts down, the RED alert conduit activates, and the packet slams into Outcome B (Circuit Breaker).",
+        highlight: "Result: Hard BLOCK. The agent halts and alerts the operator. Zero private keys exposed, zero funds lost.",
+        telConduit: "RED (BLOCKED / THREAT)",
+        telConduitColor: "var(--rose)",
+        telHomoglyph: "100% (CYRILLIC U+0430)",
+        telHomoglyphColor: "var(--rose)",
+        telBudget: "EVALUATION HALTED",
+        telBudgetColor: "var(--rose)",
+        chamber1Text: "ALARM: Cyrillic Spoof (U+0430)",
+        chamber1Color: "var(--rose)",
+        chamber2Text: "Halted by Chamber 1",
+        chamber2Color: "var(--text-dim)",
+        wirePassClass: "flow-wire",
+        wireBlockClass: "flow-wire active-wire pulse-rose",
+        photonPassOpacity: "0",
+        photonBlockOpacity: "1",
+        outcomePassStroke: "rgba(255,255,255,0.12)",
+        outcomeBlockStroke: "var(--rose)"
       },
       drain: {
-        domain: "paybox.sh",
-        tokens: ["h","t","t","p","s",":","/","/","p","a","y","b","o","x",".","s","h"],
-        amount: "500,000,000 units ($500.00 USDC)",
-        network: "eip155:84532",
-        stations: {
-          1: {
-            title: "Agent Intercepts High-Value Challenge",
-            body: "A legitimate-looking merchant service issues an HTTP 402 challenge, but requests a payment of 500.00 USDC instead of the expected 0.001 USDC micro-fee.",
-            callout: "Rogue or compromised merchants can inflate invoice amounts hoping autonomous agents won't notice.",
-            chips: ["Requested: 500.00 USDC", "Currency: USDC", "Target: Verified Merchant"],
-            time: "0.00 ms",
-            mem: "3.8 KB",
-            status: "pass"
-          },
-          2: {
-            title: "SSRF Airgap Verified",
-            body: "Lexical parse confirms valid URL structure purely in memory. Zero outbound calls made.",
-            callout: "Airgap standard maintained across all requests.",
-            chips: ["SSRF: SAFE", "In-Memory: YES"],
-            time: "8.10 ms",
-            mem: "4.1 KB",
-            status: "pass"
-          },
-          3: {
-            title: "Domain Verification: PASS",
-            body: "The domain 'paybox.sh' is verified legitimate with no lookalikes or suffix attacks. The threat is in the payment requirements, not the domain.",
-            callout: "PayGuard doesn't just check domain names; it inspects the cryptographic payment requirements as well.",
-            chips: ["Domain: VERIFIED", "Phishing: NO"],
-            time: "16.40 ms",
-            mem: "4.6 KB",
-            status: "pass"
-          },
-          4: {
-            title: "CRITICAL: Policy Ceiling Exceeded",
-            body: "ALARM: Requested amount ($500.00 USDC) exceeds the user's hard policy ceiling ($1.00 USDC) by 500x! Circuit breaker trips immediately in memory.",
-            callout: "Even if an LLM is persuaded by an adversary to pay a large invoice, PayGuard's deterministic policy comparator refuses.",
-            chips: ["Policy Ceiling: $1.00", "Requested: $500.00", "Overspend: +$499.00"],
-            time: "24.90 ms",
-            mem: "5.0 KB",
-            status: "blocked"
-          },
-          5: {
-            title: "Advisory Verdict: Hard BLOCK (DRAIN PREVENTED)",
-            body: "PayGuard issues a BLOCK verdict with explicit guidance: 'Amount exceeds policy limit'. The agent terminates the transaction and prompts the human operator.",
-            callout: "Result: 500 USDC preserved in the user's wallet.",
-            chips: ["Verdict: BLOCK", "Reason: AMOUNT_LIMIT_EXCEEDED", "Wallet Saved: $500.00"],
-            time: "26.30 ms",
-            mem: "5.2 KB",
-            status: "blocked"
-          }
-        }
+        statusText: "THREAT INTERCEPTED · OVER-BUDGET DRAIN PREVENTED",
+        statusColor: "var(--rose)",
+        heading: "3. Rogue Invoice Drain: Spending Limit Circuit Breaker",
+        text: "The merchant domain (paybox.sh) is legitimate, but the payment invoice requests 500.00 USDC—violating the user's explicit policy rule ($1.00 max). Chamber 1 passes, but Chamber 2 (Policy Guard) detects an unauthorized $499.00 overspend. The circuit breaker trips in-memory, routing down the RED conduit to abort the transaction before any wallet signature occurs.",
+        highlight: "Result: 500 USDC preserved. An autonomous agent can never be tricked into signing beyond your configured policy.",
+        telConduit: "RED (BLOCKED / OVERSPEND)",
+        telConduitColor: "var(--rose)",
+        telHomoglyph: "0.0% (LEGIT DOMAIN)",
+        telHomoglyphColor: "var(--emerald)",
+        telBudget: "EXCEEDED (+$499.00 OVER)",
+        telBudgetColor: "var(--rose)",
+        chamber1Text: "Clean: Verified Domain",
+        chamber1Color: "var(--emerald)",
+        chamber2Text: "ALARM: $500 > $1.00 Ceiling",
+        chamber2Color: "var(--rose)",
+        wirePassClass: "flow-wire",
+        wireBlockClass: "flow-wire active-wire pulse-rose",
+        photonPassOpacity: "0",
+        photonBlockOpacity: "1",
+        outcomePassStroke: "rgba(255,255,255,0.12)",
+        outcomeBlockStroke: "var(--rose)"
       }
     };
 
-    function renderSimStation(stationNum) {
-      currentSimStation = stationNum;
-      const data = SIM_CONTENT[simMode];
-      const stationData = data.stations[stationNum];
-      const isBlocked = stationData.status === 'blocked';
+    function triggerFlowScenario(type) {
+      currentFlowScenario = type;
+      const s = FLOW_SCENARIOS[type];
 
-      // 1. Update track progress bar
-      const fillPercentage = (stationNum / 5) * 100;
-      const trackFill = document.getElementById('simTrackFill');
-      trackFill.style.width = `${fillPercentage}%`;
-      trackFill.style.background = isBlocked ? 'var(--rose)' : 'linear-gradient(90deg, var(--cyan) 0%, var(--violet) 50%, var(--emerald) 100%)';
-      trackFill.style.boxShadow = isBlocked ? '0 0 20px var(--rose)' : '0 0 16px var(--cyan)';
+      // Update Buttons
+      document.querySelectorAll('.flow-btn').forEach(b => b.classList.remove('active', 'btn-safe', 'btn-attack'));
+      if (type === 'safe') {
+        const btn = document.getElementById('flowBtnSafe');
+        btn.classList.add('active', 'btn-safe');
+      } else if (type === 'phish') {
+        const btn = document.getElementById('flowBtnPhish');
+        btn.classList.add('active', 'btn-attack');
+      } else if (type === 'drain') {
+        const btn = document.getElementById('flowBtnDrain');
+        btn.classList.add('active', 'btn-attack');
+      }
 
-      // 2. Update 5 Station Node classes
-      for (let i = 1; i <= 5; i++) {
-        const nodeEl = document.getElementById(`station${i}`);
-        nodeEl.classList.remove('active', 'passed', 'blocked');
+      // Update Status Header
+      document.getElementById('flowStatusLabel').textContent = s.statusText;
+      document.getElementById('flowStatusLabel').style.color = s.statusColor;
 
-        if (i < stationNum) {
-          nodeEl.classList.add(data.stations[i].status === 'blocked' ? 'blocked' : 'passed');
-        } else if (i === stationNum) {
-          nodeEl.classList.add(isBlocked ? 'blocked' : 'active');
+      // Update Conduits
+      const passWire1 = document.getElementById('wirePassTrunk');
+      const passWire2 = document.getElementById('wirePassChamber2');
+      const blockWire1 = document.getElementById('wireBlockTrunk');
+      const blockWire2 = document.getElementById('wireBlockChamber2');
+
+      passWire1.className.baseVal = s.wirePassClass;
+      passWire2.className.baseVal = s.wirePassClass;
+      blockWire1.className.baseVal = s.wireBlockClass;
+      blockWire2.className.baseVal = s.wireBlockClass;
+
+      // Update Photons
+      document.getElementById('photonPass').setAttribute('opacity', s.photonPassOpacity);
+      document.getElementById('photonBlock').setAttribute('opacity', s.photonBlockOpacity);
+
+      // Update Chambers Text
+      const ch1 = document.getElementById('chamber1StatusText');
+      ch1.textContent = s.chamber1Text;
+      ch1.setAttribute('fill', s.chamber1Color);
+
+      const ch2 = document.getElementById('chamber2StatusText');
+      ch2.textContent = s.chamber2Text;
+      ch2.setAttribute('fill', s.chamber2Color);
+
+      // Update Outcomes
+      document.querySelector('#nodeOutcomePass rect').setAttribute('stroke', s.outcomePassStroke);
+      document.querySelector('#nodeOutcomeBlock rect').setAttribute('stroke', s.outcomeBlockStroke);
+
+      // Update Explainer Readout
+      document.getElementById('explainerHeading').innerHTML = `<i class="fa-solid fa-circle-nodes" style="color:${s.statusColor}"></i> <span>${s.heading}</span>`;
+      document.getElementById('explainerText').textContent = s.text;
+      document.getElementById('explainerHighlight').innerHTML = `<strong>Security Guarantee:</strong> ${s.highlight}`;
+
+      const telConduit = document.getElementById('telConduit');
+      telConduit.textContent = s.telConduit;
+      telConduit.style.color = s.telConduitColor;
+
+      const telH = document.getElementById('telHomoglyph');
+      telH.textContent = s.telHomoglyph;
+      telH.style.color = s.telHomoglyphColor;
+
+      const telB = document.getElementById('telBudget');
+      telB.textContent = s.telBudget;
+      telB.style.color = s.telBudgetColor;
+    }
+
+    // Interactive Click-to-Inspect Node Explainer
+    function selectFlowNode(nodeKey) {
+      const details = {
+        agent: {
+          title: "Autonomous AI Agent Fleet",
+          text: "Agents powered by LLMs (Claude, GPT-4, LangChain, AutoGPT) make autonomous tool calls to purchase compute, pay for API tokens, or license datasets using the x402 open protocol.",
+          highlight: "PayGuard provides pre-flight validation so agents can evaluate requests against defined policy limits before signing."
+        },
+        merchant: {
+          title: "Web Merchant & HTTP 402 Challenge",
+          text: "When an agent queries a paywalled API, the server returns an HTTP 402 Payment Required response containing payment requirements: price, token asset address, and network chain ID.",
+          highlight: "Untrusted endpoints can deliver unexpected parameters; PayGuard inspects these before any commitment."
+        },
+        policy: {
+          title: "User-Defined Security Policy",
+          text: "You define explicit guardrails: maximum allowed spending per call (e.g. $1.00 USDC), approved blockchain networks (Base Sepolia eip155:84532), and authorized merchant whitelists.",
+          highlight: "Deterministic code enforcement: rules are evaluated strictly in code without relying on LLM self-policing."
+        },
+        gateway: {
+          title: "In-Memory Ingestion Core (SSRF Resistance)",
+          text: "PayGuard parses the target checkout URL strictly locally in-memory using lexical URL grammar. Zero outbound HTTP requests are dispatched to the merchant host, mitigating Server-Side Request Forgery (SSRF).",
+          highlight: "Internal VPCs and cloud metadata services are never probed during static analysis."
+        },
+        chamber1: {
+          title: "Chamber 1: URL Sentinel & Unicode IDN Lexer",
+          text: "Dissects domain names into individual code points. Checks for Cyrillic or Greek lookalike homoglyphs ('xn--pybox-7qa.sh'), suffix attacks ('paybox.sh.attacker.com'), and brand impersonation.",
+          highlight: "Identifies lookalike character spoofing before transactions proceed."
+        },
+        chamber2: {
+          title: "Chamber 2: Payment Policy Guard",
+          text: "Compares proposed atomic payment amounts against your configured ceiling. Confirms the blockchain chain ID and token contract address match your wallet rules.",
+          highlight: "Flags unexpected overcharges and cross-network mismatches."
+        },
+        chamber3: {
+          title: "Chamber 3: Privacy Sanitizer & Threat Redactor",
+          text: "Automatically strips high-entropy tokens, passwords, session IDs, and query keys (?api_key=sk_live_...) from URLs before threat intelligence queries are checked.",
+          highlight: "Prevents leaking sensitive query secrets in outbound lookup logs."
+        },
+        outcomePass: {
+          title: "Outcome A: PASS — Policy Compliant",
+          text: "The request satisfies static checks and stays within configured limits. PayGuard issues an advisory PASS verdict for the calling agent.",
+          highlight: "Non-Custodial Design: PayGuard is strictly an advisory gate and never holds keys or executes transactions."
+        },
+        outcomeBlock: {
+          title: "Outcome B: BLOCK — Policy Violation or Threat Detected",
+          text: "A threat or policy violation was detected (homoglyph spoof, budget ceiling exceeded, or suspicious pattern). PayGuard issues an advisory BLOCK verdict.",
+          highlight: "The calling agent runtime can abort the operation before any funds are signed or dispatched."
         }
-      }
+      };
 
-      // 3. Update Left X-Ray Visual Chamber
-      document.getElementById('xrayStreamBadge').textContent = `STATION ${stationNum} OF 5`;
-      const laserEl = document.getElementById('chamberLaser');
-      laserEl.className = isBlocked ? 'chamber-laser alarm' : 'chamber-laser';
+      const d = details[nodeKey];
+      if (!d) return;
 
-      // Render tokens
-      const tokenDisplay = document.getElementById('xrayTokensDisplay');
-      tokenDisplay.innerHTML = '';
-      data.tokens.forEach((char, idx) => {
-        const span = document.createElement('span');
-        span.className = 'token-char';
-        span.textContent = char;
-
-        if (simMode === 'homoglyph' && idx === 9 && stationNum >= 3) {
-          span.className = 'token-char spoofed';
-          span.title = 'U+0430 Cyrillic Small Letter a';
-        } else if (stationNum >= 3 && stationData.status === 'pass') {
-          span.className = 'token-char safe-match';
-        }
-        tokenDisplay.appendChild(span);
-      });
-
-      // Render Meta Chips
-      const chipsDisplay = document.getElementById('xrayMetaChips');
-      chipsDisplay.innerHTML = '';
-      stationData.chips.forEach(chipText => {
-        const chip = document.createElement('span');
-        chip.className = 'meta-chip';
-        chip.textContent = chipText;
-        if (chipText.includes('BLOCKED') || chipText.includes('ALARM') || chipText.includes('BLOCK') || chipText.includes('Cyrillic') || chipText.includes('500.00')) {
-          chip.style.borderColor = 'rgba(244, 63, 94, 0.4)';
-          chip.style.color = '#fda4af';
-          chip.style.background = 'rgba(244, 63, 94, 0.15)';
-        }
-        chipsDisplay.appendChild(chip);
-      });
-
-      // 4. Update Right Plain-English Explainer
-      document.getElementById('explainerBadge').textContent = `STATION ${stationNum} · ${isBlocked ? 'THREAT DETECTED' : 'INSPECTION ACTIVE'}`;
-      document.getElementById('explainerBadge').style.color = isBlocked ? 'var(--rose)' : 'var(--cyan)';
-      document.getElementById('explainerTitle').textContent = stationData.title;
-      document.getElementById('explainerBody').textContent = stationData.body;
-      document.getElementById('explainerCallout').innerHTML = `<strong>Why this matters to you:</strong> ${stationData.callout}`;
-      if (isBlocked) {
-        document.getElementById('explainerCallout').style.borderLeftColor = 'var(--rose)';
-        document.getElementById('explainerCallout').style.background = 'rgba(244, 63, 94, 0.08)';
-      } else {
-        document.getElementById('explainerCallout').style.borderLeftColor = 'var(--cyan)';
-        document.getElementById('explainerCallout').style.background = 'rgba(0, 240, 255, 0.06)';
-      }
-
-      // 5. Update Telemetry numbers
-      document.getElementById('metricTime').textContent = stationData.time;
-      document.getElementById('metricMem').textContent = stationData.mem;
+      document.getElementById('explainerHeading').innerHTML = `<i class="fa-solid fa-circle-info" style="color:var(--cyan)"></i> <span>Node Deep-Dive: ${d.title}</span>`;
+      document.getElementById('explainerText').textContent = d.text;
+      document.getElementById('explainerHighlight').innerHTML = `<strong>Architectural Role:</strong> ${d.highlight}`;
     }
-
-    function jumpToStation(stationNum) {
-      renderSimStation(stationNum);
-    }
-
-    function stepSim(delta) {
-      let next = currentSimStation + delta;
-      if (next > 5) next = 1;
-      if (next < 1) next = 5;
-      renderSimStation(next);
-    }
-
-    function setSimMode(mode) {
-      simMode = mode;
-      document.querySelectorAll('.sim-mode-btn').forEach(b => b.classList.remove('active', 'mode-safe', 'mode-attack'));
-      
-      if (mode === 'safe') {
-        const btn = document.getElementById('modeBtnSafe');
-        btn.classList.add('active', 'mode-safe');
-      } else if (mode === 'homoglyph') {
-        const btn = document.getElementById('modeBtnHomoglyph');
-        btn.classList.add('active', 'mode-attack');
-      } else if (mode === 'drain') {
-        const btn = document.getElementById('modeBtnDrain');
-        btn.classList.add('active', 'mode-attack');
-      }
-      renderSimStation(1);
-    }
-
-    function toggleSimPlay() {
-      isSimPlaying = !isSimPlaying;
-      const btn = document.getElementById('simPlayBtn');
-      const icon = document.getElementById('simPlayIcon');
-      const text = document.getElementById('simPlayText');
-
-      if (isSimPlaying) {
-        icon.className = 'fa-solid fa-pause';
-        text.textContent = 'Pause';
-        btn.classList.remove('active');
-        startSimLoop();
-      } else {
-        icon.className = 'fa-solid fa-play';
-        text.textContent = 'Play';
-        btn.classList.add('active');
-        clearInterval(simTimer);
-      }
-    }
-
-    function restartSim() {
-      renderSimStation(1);
-    }
-
-    function startSimLoop() {
-      clearInterval(simTimer);
-      simTimer = setInterval(() => {
-        if (!isSimPlaying) return;
-        stepSim(1);
-      }, 3400);
-    }
-
-    // Start on Station 1
-    renderSimStation(1);
-    startSimLoop();
 
     // =========================================================
     // 4. SENTINEL STUDIO COCKPIT LOGIC
@@ -3340,8 +3182,8 @@
         url: "https://paybox.sh/api/v1/checkout",
         network: "eip155:84532 · USDC (Base Sepolia)",
         amount: "1,000 atomic units ($0.001 USDC)",
-        latency: "38ms",
-        riskScore: 0,
+        latency: "~5ms (simulated)",
+        riskScore: 5,
         gates: [
           { status: "status-pass", text: "AIRGAPPED", icon: "fa-check" },
           { status: "status-pass", text: "MATCHED", icon: "fa-check" },
@@ -3352,14 +3194,14 @@
           cls: "hero-pass",
           icon: "fa-circle-check",
           color: "var(--emerald)",
-          text: "PASS · SAFE TO SIGN",
-          risk: "Risk Level: NONE (0/100)",
-          plain: "The requested checkout domain exactly matches verified PayBox infrastructure. Amount (0.001 USDC) is well within the user's $1.00 safety ceiling. No Cyrillic or lookalike character spoofing detected.",
+          text: "EXPECTED_DOMAIN_MATCH",
+          risk: "Risk Level: LOW",
+          plain: "The target checkout URL hostname matches configured expected domain 'paybox.sh'. Requested amount (0.001 USDC) satisfies the policy ceiling. No lookalike homoglyphs detected.",
           guidance: {
             bg: "rgba(16, 185, 129, 0.1)",
             border: "rgba(16, 185, 129, 0.25)",
             color: "#6ee7b7",
-            text: "Action for Agent: Safe to proceed. Agent wallet may sign the x402 payment proof."
+            text: "Advisory: Policy rules passed. Calling agent runtime may proceed if configured to trust this merchant."
           }
         }
       },
@@ -3368,7 +3210,7 @@
         url: "https://evilpaybox.sh/verify-wallet/reset-token-secret9999",
         network: "eip155:84532 · USDC (Base Sepolia)",
         amount: "1,000 atomic units ($0.001 USDC)",
-        latency: "44ms",
+        latency: "~5ms (simulated)",
         riskScore: 95,
         gates: [
           { status: "status-pass", text: "AIRGAPPED", icon: "fa-check" },
@@ -3381,13 +3223,13 @@
           icon: "fa-ban",
           color: "var(--rose)",
           text: "BLOCK · BRAND IMPERSONATION",
-          risk: "Risk Level: HIGH (95/100)",
+          risk: "Risk Level: HIGH",
           plain: "Domain 'evilpaybox.sh' mimics official PayBox branding but does not match expected domain 'paybox.sh'. High likelihood of a phishing credential trap designed to deceive autonomous agents.",
           guidance: {
             bg: "rgba(244, 63, 94, 0.1)",
             border: "rgba(244, 63, 94, 0.25)",
             color: "#fda4af",
-            text: "Action for Agent: Abort transaction immediately. Do NOT sign or submit wallet credentials."
+            text: "Advisory: Do not sign or submit payment for this destination. Flagged as suspicious."
           }
         }
       },
@@ -3396,8 +3238,8 @@
         url: "https://paybox.sh/api/v1/checkout",
         network: "eip155:84532 · USDC (Base Sepolia)",
         amount: "500,000,000 atomic units ($500.00 USDC)",
-        latency: "32ms",
-        riskScore: 100,
+        latency: "~5ms (simulated)",
+        riskScore: 90,
         gates: [
           { status: "status-pass", text: "AIRGAPPED", icon: "fa-check" },
           { status: "status-pass", text: "MATCHED", icon: "fa-check" },
@@ -3409,13 +3251,13 @@
           icon: "fa-triangle-exclamation",
           color: "var(--rose)",
           text: "BLOCK · CEILING EXCEEDED",
-          risk: "Risk Level: CRITICAL (100/100)",
-          plain: "The merchant requested 500.00 USDC, which drastically exceeds the agent operator's hard policy ceiling of $1.00 USDC. Prevents rogue balance draining.",
+          risk: "Risk Level: HIGH",
+          plain: "The merchant requested 500.00 USDC, which exceeds the configured policy ceiling of $1.00 USDC. Prevents unauthorized budget overspend.",
           guidance: {
             bg: "rgba(244, 63, 94, 0.1)",
             border: "rgba(244, 63, 94, 0.25)",
             color: "#fda4af",
-            text: "Action for Agent: Reject payment challenge. Raise budget approval alert to human operator."
+            text: "Advisory: Reject payment challenge. Raise budget approval alert to operator."
           }
         }
       },
@@ -3424,7 +3266,7 @@
         url: "https://shop.example/pay?key=sk_live_secret99887766&pass=supersecret",
         network: "eip155:84532 · USDC (Base Sepolia)",
         amount: "5,000 atomic units ($0.005 USDC)",
-        latency: "51ms",
+        latency: "~5ms (simulated)",
         riskScore: 65,
         gates: [
           { status: "status-pass", text: "AIRGAPPED", icon: "fa-check" },
@@ -3437,13 +3279,13 @@
           icon: "fa-triangle-exclamation",
           color: "var(--amber)",
           text: "REVIEW · SENSITIVE CREDENTIALS",
-          risk: "Risk Level: CAUTION (65/100)",
+          risk: "Risk Level: CAUTION",
           plain: "Target URL contains private secret keys or passwords inside URL query parameters. PayGuard automatically sanitized the URL to prevent credential leakage to threat intel feeds.",
           guidance: {
             bg: "rgba(245, 158, 11, 0.1)",
             border: "rgba(245, 158, 11, 0.25)",
             color: "#fde68a",
-            text: "Action for Agent: Caution. Scrub credentials before passing URL to external networks."
+            text: "Advisory: Scrub credentials before passing URL to external networks."
           }
         }
       }
@@ -3508,23 +3350,23 @@
       }, 450);
     }
 
-    // 5. Interactive Tier Highlight
-    function highlightTier(card) {
-      document.querySelectorAll('.hierarchy-tier-card').forEach(c => c.style.borderColor = 'rgba(255, 255, 255, 0.08)');
-      card.style.borderColor = 'var(--cyan)';
-      card.style.boxShadow = '0 10px 40px rgba(0, 240, 255, 0.2)';
-      setTimeout(() => {
-        card.style.boxShadow = '';
-      }, 1500);
-    }
-
-    // 6. Live Interactive Lab Scan
+    // 5. Live Interactive Lab Scan
     function setLabPreset(url, expectedDomain) {
       document.getElementById('labUrlInput').value = url;
       runLiveScan(expectedDomain);
     }
 
-    async function runLiveScan(expectedDomain = 'paybox.sh') {
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    async function runLiveScan(expectedDomain) {
       const urlInput = document.getElementById('labUrlInput').value.trim();
       const resultBox = document.getElementById('liveLabResult');
       const scanBtn = document.getElementById('labScanBtn');
@@ -3537,11 +3379,16 @@
       scanBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Scanning...`;
       scanBtn.disabled = true;
 
+      const payload = { url: urlInput };
+      if (expectedDomain) {
+        payload.expectedDomain = expectedDomain;
+      }
+
       try {
         const res = await fetch('/api/analyze-url', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: urlInput, expectedDomain: expectedDomain })
+          body: JSON.stringify(payload)
         });
         const data = await res.json();
         renderLiveResult(data);
@@ -3564,20 +3411,26 @@
       const icon = isPass ? 'fa-circle-check' : (isBlock ? 'fa-circle-xmark' : 'fa-triangle-exclamation');
       const color = isPass ? 'var(--emerald)' : (isBlock ? 'var(--rose)' : 'var(--amber)');
 
+      const safeVerdict = escapeHtml(data.verdict || 'ANALYSIS_COMPLETE');
+      const safeRisk = escapeHtml(data.riskLevel || 'UNKNOWN');
+      const safeSummary = escapeHtml(data.summary || 'Security evaluation completed.');
+      const safeHostname = escapeHtml(data.hostname || 'None');
+      const safeRec = escapeHtml(data.recommendation || 'Evaluate verdict against your agent policy before signing.');
+
       resultBox.innerHTML = `
         <div style="background: rgba(10, 15, 29, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 1.6rem; animation: pulseBorder 1.5s ease-out 1;">
           <div class="verdict-hero-box ${themeCls}" style="margin-bottom: 1.25rem;">
             <div class="verdict-circle-icon"><i class="fa-solid ${icon}"></i></div>
             <div class="verdict-main-text">
-              <h4 style="color:${color}; font-size:1.25rem;">${data.verdict} — ${data.riskLevel || 'ANALYSIS COMPLETE'}</h4>
-              <p>${data.summary || 'Security evaluation completed across all 4 in-memory inspection gates.'}</p>
+              <h4 style="color:${color}; font-size:1.25rem;">${safeVerdict} — ${safeRisk}</h4>
+              <p>${safeSummary}</p>
             </div>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
             <div style="background: rgba(0,0,0,0.35); padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
               <span style="font-size:0.7rem; color:var(--text-dim); text-transform:uppercase; font-weight:700;">Parsed Hostname</span>
-              <div style="font-family:var(--font-mono); font-size:0.85rem; color:var(--cyan);">${data.hostname || 'None'}</div>
+              <div style="font-family:var(--font-mono); font-size:0.85rem; color:var(--cyan);">${safeHostname}</div>
             </div>
             <div style="background: rgba(0,0,0,0.35); padding: 12px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
               <span style="font-size:0.7rem; color:var(--text-dim); text-transform:uppercase; font-weight:700;">Privacy Sanitization</span>
@@ -3586,8 +3439,8 @@
           </div>
 
           <div class="plain-english-box">
-            <strong>Plain English Recommendation:</strong>
-            ${data.recommendation || 'Proceed with normal transaction flow if calling agent has validated budget.'}
+            <strong>Advisory Recommendation:</strong>
+            ${safeRec}
           </div>
         </div>
       `;
@@ -3596,26 +3449,25 @@
     function renderFallbackResult(url) {
       const resultBox = document.getElementById('liveLabResult');
       resultBox.style.display = 'block';
-      const isBad = url.includes('evil') || url.includes('xn--') || url.includes('attacker');
 
       resultBox.innerHTML = `
         <div style="background: rgba(10, 15, 29, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 1.6rem;">
-          <div class="verdict-hero-box ${isBad ? 'hero-block' : 'hero-pass'}" style="margin-bottom: 1.25rem;">
-            <div class="verdict-circle-icon"><i class="fa-solid ${isBad ? 'fa-ban' : 'fa-circle-check'}"></i></div>
+          <div class="verdict-hero-box hero-review" style="margin-bottom: 1.25rem;">
+            <div class="verdict-circle-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
             <div class="verdict-main-text">
-              <h4 style="color:${isBad ? 'var(--rose)' : 'var(--emerald)'};">${isBad ? 'BLOCK · SUSPICIOUS URL' : 'PASS · VERIFIED DOMAIN'}</h4>
-              <p>${isBad ? 'Threat detected: Domain mimics authorized infrastructure or contains homoglyphs.' : 'URL conforms to in-memory security boundaries and local policies.'}</p>
+              <h4 style="color:var(--amber);">OFFLINE / API UNAVAILABLE</h4>
+              <p>Could not reach the PayGuard API service endpoint to evaluate the URL dynamically.</p>
             </div>
           </div>
           <div class="plain-english-box">
-            <strong>Static Local Result:</strong>
-            ${isBad ? 'Do not execute or sign payments for this link. Flagged for brand impersonation.' : 'Safe to proceed under standard x402 payment policy limits.'}
+            <strong>Fallback Notice:</strong>
+            Cannot perform automated analysis without an active connection to the PayGuard API. Please run locally via <code>npm start</code> or ensure the API endpoint is accessible.
           </div>
         </div>
       `;
     }
 
-    // 7. FAQ Accordion Toggle
+    // 6. FAQ Accordion Toggle
     function toggleFaq(btn) {
       const item = btn.closest('.faq-item');
       item.classList.toggle('open');
