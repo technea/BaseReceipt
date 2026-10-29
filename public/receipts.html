@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BaseReceipt — Verified Payment Receipts</title>
+  <meta name="description" content="Live log of USDC payment receipts verified on Base mainnet and Base Sepolia via BaseReceipt." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f1117;
+      --bg2: #161b27;
+      --bg3: #1e2435;
+      --border: #2a3040;
+      --accent: #0052ff;
+      --accent2: #3c7eff;
+      --text: #e8ecf4;
+      --muted: #7b8599;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --code-bg: #111827;
+      --radius: 12px;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f8faff;
+        --bg2: #eef2ff;
+        --bg3: #e2e8f7;
+        --border: #c7d2ec;
+        --text: #0f1117;
+        --muted: #4a5568;
+        --code-bg: #1e2435;
+      }
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    a { color: var(--accent2); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem;
+      background: rgba(15,17,23,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .brand { display: flex; align-items: center; gap: 0.6rem; font-weight: 700; font-size: 1.15rem; color: var(--text); }
+    .brand-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+    .nav-links { display: flex; align-items: center; gap: 1.25rem; font-size: 0.9rem; }
+    .nav-links a { color: var(--muted); transition: color 0.15s; }
+    .nav-links a:hover, .nav-links a.active { color: var(--text); }
+
+    main {
+      flex: 1;
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+      width: 100%;
+    }
+
+    .header-area {
+      margin-bottom: 2.5rem;
+    }
+    .header-area h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+    .header-area p {
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    .stat-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+    }
+    .stat-card .label {
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.35rem;
+    }
+    .stat-card .val {
+      font-size: 1.6rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text);
+    }
+
+    .table-container {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      text-align: left;
+    }
+    th {
+      padding: 0.9rem 1.2rem;
+      background: var(--bg3);
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 1rem 1.2rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .badge-confirmed { background: rgba(34, 197, 94, 0.15); color: var(--green); }
+    .badge-overpaid { background: rgba(59, 130, 246, 0.15); color: var(--accent2); }
+    .badge-underpaid { background: rgba(245, 158, 11, 0.15); color: var(--yellow); }
+    .badge-other { background: rgba(123, 133, 153, 0.15); color: var(--muted); }
+
+    .empty-state {
+      padding: 3.5rem 1.5rem;
+      text-align: center;
+      color: var(--muted);
+    }
+    .empty-state p {
+      margin-top: 0.5rem;
+      font-size: 0.95rem;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand">
+    <span class="brand-dot"></span>
+    BaseReceipt
+  </a>
+  <div class="nav-links">
+    <a href="/">Overview</a>
+    <a href="/receipts" class="active">Receipts</a>
+    <a href="/#demo">x402 Demo</a>
+    <a href="/health">Health</a>
+    <a href="https://github.com/technea/BaseReceipt" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</nav>
+
+<main>
+  <div class="header-area">
+    <h1>Verified Receipts</h1>
+    <p>Real-time log of on-chain USDC payments verified via BaseReceipt.</p>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="label">Verified Payments</div>
+      <div class="val" id="totalVerified">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Total USDC Verified</div>
+      <div class="val" id="totalVolume">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Verification Engine</div>
+      <div class="val" style="font-size: 1.15rem; padding-top: 0.4rem;">Base On-Chain RPC</div>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>Amount (USDC)</th>
+          <th>Network</th>
+          <th>Tx Hash</th>
+          <th>From</th>
+          <th>Block</th>
+          <th>Verified At</th>
+        </tr>
+      </thead>
+      <tbody id="receiptsBody">
+        <tr>
+          <td colspan="7" class="empty-state">Loading receipts...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<footer>
+  <p>
+    <a href="/">BaseReceipt</a> ·
+    <a href="https://github.com/technea/BaseReceipt" target="_blank" rel="noopener">GitHub</a> ·
+    <a href="/health">Health</a> ·
+    <a href="/.well-known/x402-bazaar.json">x402 manifest</a>
+  </p>
+  <p style="margin-top:0.75rem;">Built on <a href="https://base.org" target="_blank" rel="noopener">Base</a> · Non-custodial · No keys stored</p>
+</footer>
+
+<script>
+  async function loadReceipts() {
+    const tbody = document.getElementById('receiptsBody');
+    try {
+      const res = await fetch('/api/payments');
+      if (!res.ok) throw new Error('Failed to fetch payments');
+      const data = await res.json();
+
+      document.getElementById('totalVerified').innerText = Number(data.totalVerified || 0).toLocaleString();
+      const volNum = Number(data.totalVolumeAtomic || 0) / 1e6;
+      document.getElementById('totalVolume').innerText = '$' + volNum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      const payments = data.payments || [];
+      if (payments.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="empty-state">
+              <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🧾</div>
+              <strong>No verified payments recorded yet</strong>
+              <p>When payments are verified through <code>/api/check-payment</code> or the x402 demo, they appear here.</p>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = payments.map(p => {
+        const isSepolia = p.network === 'base-sepolia';
+        const scanBase = isSepolia ? 'https://sepolia.basescan.org' : 'https://basescan.org';
+        const shortTx = p.tx_hash ? p.tx_hash.slice(0, 8) + '...' + p.tx_hash.slice(-6) : '—';
+        const shortFrom = p.from_address ? p.from_address.slice(0, 6) + '...' + p.from_address.slice(-4) : '—';
+        const amountUsdc = (Number(p.paid_atomic || 0) / 1e6).toFixed(2);
+        const badgeClass = p.status === 'confirmed' ? 'badge-confirmed' : (p.status === 'overpaid' ? 'badge-overpaid' : 'badge-underpaid');
+
+        return `
+          <tr>
+            <td><span class="badge ${badgeClass}">${p.status}</span></td>
+            <td style="font-weight:600;">$${amountUsdc}</td>
+            <td>${p.network}</td>
+            <td><a href="${scanBase}/tx/${p.tx_hash}" target="_blank" rel="noopener">${shortTx}</a></td>
+            <td><a href="${scanBase}/address/${p.from_address}" target="_blank" rel="noopener">${shortFrom}</a></td>
+            <td>${p.block_number || '—'}</td>
+            <td style="color:var(--muted);">${p.verified_at ? new Date(p.verified_at).toLocaleDateString() : '—'}</td>
+          </tr>
+        `;
+      }).join('');
+    } catch (err) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="empty-state">
+            <strong style="color:var(--red);">Unable to load receipts</strong>
+            <p>${err.message}</p>
+          </td>
+        </tr>
+      `;
+    }
+  }
+
+  loadReceipts();
+</script>
+
+</body>
+</html>
