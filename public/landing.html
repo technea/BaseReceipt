@@ -11,6 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@coinbase/wallet-sdk@4.0.3/dist/index.umd.js"></script>
   <style>
     :root {
       --bg: #0f1117;
@@ -253,6 +254,7 @@
     <a href="#demo">Try Demo</a>
     <a href="/receipts">Receipts</a>
     <a href="https://github.com/technea/BaseReceipt" target="_blank" rel="noopener">GitHub ↗</a>
+    <button id="navConnectBtn" class="btn btn-outline" onclick="connectWallet()">Connect Wallet</button>
     <a class="btn btn-primary" href="/api/demo/quote">Live Demo →</a>
   </div>
 </nav>
@@ -343,19 +345,176 @@
   <h2>Try the x402 demo endpoint</h2>
   <p>This endpoint costs <strong>0.10 USDC</strong> on Base Sepolia. Pay, present the tx hash, and receive the response.</p>
   <div class="demo-box">
-    <h3>How it works</h3>
+    <h3>Interactive Demo: Pay & Verify</h3>
+    <p>Test the verification flow directly using <strong>Coinbase Wallet / Base Smart Wallet</strong> on Base Sepolia:</p>
+    
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:1.25rem;margin-bottom:1.5rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+        <div>
+          <div style="font-size:0.8rem;color:var(--muted);text-transform:uppercase;">Connected Wallet</div>
+          <div id="walletAddressDisplay" style="font-family:'JetBrains Mono',monospace;font-weight:600;">Not connected</div>
+        </div>
+        <div>
+          <div style="font-size:0.8rem;color:var(--muted);text-transform:uppercase;">Network</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--green);">Base Sepolia (84532)</div>
+        </div>
+        <div>
+          <button id="mainConnectBtn" class="btn btn-primary" onclick="connectWallet()">Connect Base Wallet</button>
+        </div>
+      </div>
+    </div>
+
     <ol class="demo-steps">
-      <li>Call <code>GET /api/demo/quote</code> — receive HTTP 402 with invoice details</li>
-      <li>Get test USDC from <a href="https://faucet.circle.com" target="_blank" rel="noopener">faucet.circle.com</a> (select Base Sepolia)</li>
-      <li>Send exactly 0.10 USDC to the recipient address shown in the 402 response</li>
-      <li>Copy the transaction hash from <a href="https://sepolia.basescan.org" target="_blank" rel="noopener">Sepolia Basescan</a></li>
-      <li>Call <code>GET /api/demo/quote?invoiceId=...&txHash=0x...</code> — receive the verified response</li>
+      <li><strong>Step 1:</strong> Connect your Base / Coinbase Wallet above.</li>
+      <li><strong>Step 2:</strong> Click <strong>Pay 0.10 USDC on Base Sepolia</strong> to send the payment directly from your wallet.</li>
+      <li><strong>Step 3:</strong> BaseReceipt immediately watches for the transaction hash on-chain and verifies it via <code>/api/check-payment</code>.</li>
     </ol>
-    <div style="margin-top:1.25rem;">
-      <a class="btn btn-primary" href="/api/demo/quote" target="_blank" rel="noopener">Try the demo →</a>
+
+    <div style="margin-top:1.5rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:center;">
+      <button id="payDemoBtn" class="btn btn-primary" onclick="payWithWallet()" disabled>Pay 0.10 USDC with Base Wallet</button>
+      <a class="btn btn-outline" href="/api/demo/quote" target="_blank" rel="noopener">Raw x402 402 Endpoint →</a>
+    </div>
+
+    <div id="demoStatusArea" style="margin-top:1.25rem;display:none;background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:0.85rem;">
+      <div id="demoStatusText" style="color:var(--accent2);">Processing...</div>
+      <div id="demoTxHash" style="margin-top:0.4rem;word-break:break-all;"></div>
     </div>
   </div>
 </section>
+
+<script>
+  let userAccount = null;
+  let coinbaseProvider = null;
+
+  function getProvider() {
+    if (coinbaseProvider) return coinbaseProvider;
+    if (window.CoinbaseWalletSDK) {
+      const sdk = new window.CoinbaseWalletSDK({
+        appName: 'BaseReceipt',
+        appLogoUrl: 'https://base.org/document/favicon.ico',
+        appChainIds: [84532, 8453]
+      });
+      coinbaseProvider = sdk.makeWeb3Provider();
+      return coinbaseProvider;
+    }
+    return window.ethereum;
+  }
+
+  async function connectWallet() {
+    const provider = getProvider();
+    if (!provider) {
+      alert("No Ethereum/Base wallet detected. Please install Coinbase Wallet.");
+      return;
+    }
+    try {
+      const accounts = await provider.request({ method: 'eth_requestAccounts' });
+      if (accounts && accounts.length > 0) {
+        userAccount = accounts[0];
+        const short = userAccount.slice(0, 6) + '...' + userAccount.slice(-4);
+        document.getElementById('walletAddressDisplay').innerText = short + ' (' + userAccount + ')';
+        document.getElementById('navConnectBtn').innerText = short;
+        document.getElementById('mainConnectBtn').innerText = 'Connected';
+        document.getElementById('mainConnectBtn').disabled = true;
+        document.getElementById('payDemoBtn').disabled = false;
+
+        // Switch to Base Sepolia (0x14a34 = 84532)
+        try {
+          await provider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x14a34' }]
+          });
+        } catch (switchError) {
+          if (switchError.code === 4902) {
+            await provider.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: '0x14a34',
+                chainName: 'Base Sepolia',
+                nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                rpcUrls: ['https://sepolia.base.org'],
+                blockExplorerUrls: ['https://sepolia.basescan.org']
+              }]
+            });
+          }
+        }
+      }
+    } catch (err) {
+      alert('Wallet connection failed: ' + err.message);
+    }
+  }
+
+  async function payWithWallet() {
+    if (!userAccount) {
+      await connectWallet();
+      if (!userAccount) return;
+    }
+
+    const statusArea = document.getElementById('demoStatusArea');
+    const statusText = document.getElementById('demoStatusText');
+    const txHashEl = document.getElementById('demoTxHash');
+    statusArea.style.display = 'block';
+    statusText.innerText = 'Creating invoice...';
+    txHashEl.innerText = '';
+
+    try {
+      // 1. Fetch 402 demo invoice
+      const res = await fetch('/api/demo/quote');
+      const invoiceData = await res.json();
+      const invoiceId = invoiceData.invoiceId || invoiceData.id;
+      const recipient = invoiceData.payment?.recipient || invoiceData.recipient;
+      const usdcContract = '0x036CbD53842c5426634e7929541eC2318f3dCF7e'; // Base Sepolia USDC
+
+      statusText.innerText = 'Prompting payment in Coinbase/Base wallet for 0.10 USDC...';
+
+      // ERC-20 transfer(address,uint256) function signature
+      // transfer(address to, uint256 amount)
+      // 0xa9059cbb
+      const cleanTo = recipient.toLowerCase().replace('0x', '').padStart(64, '0');
+      // 0.10 USDC = 100,000 atomic units = 0x186a0
+      const cleanAmount = (100000).toString(16).padStart(64, '0');
+      const data = '0xa9059cbb' + cleanTo + cleanAmount;
+
+      const provider = getProvider();
+      const txHash = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: userAccount,
+          to: usdcContract,
+          data: data,
+          value: '0x0'
+        }]
+      });
+
+      statusText.innerHTML = '<span style="color:var(--green)">✓ Transaction submitted!</span> Verifying on Base blockchain via BaseReceipt...';
+      txHashEl.innerHTML = 'Tx: <a href="https://sepolia.basescan.org/tx/' + txHash + '" target="_blank" rel="noopener" style="color:var(--accent2);">' + txHash + '</a>';
+
+      // Poll check-payment
+      let verified = false;
+      for (let i = 0; i < 15; i++) {
+        await new Promise(r => setTimeout(r, 3000));
+        try {
+          const checkRes = await fetch('/api/check-payment', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ invoiceId, txHash })
+          });
+          const checkData = await checkRes.json();
+          if (checkData.status === 'confirmed' || checkData.status === 'overpaid') {
+            statusText.innerHTML = '<span style="color:var(--green);font-weight:700;">✓ PAYMENT VERIFIED ON-CHAIN!</span> Status: ' + checkData.status;
+            verified = true;
+            break;
+          }
+        } catch (e) {}
+      }
+
+      if (!verified) {
+        statusText.innerText = 'Tx submitted. Base block confirmation is taking a few moments. Refresh /receipts to view.';
+      }
+    } catch (err) {
+      statusText.innerHTML = '<span style="color:#ef4444">Error: ' + err.message + '</span>';
+    }
+  }
+</script>
 
 <hr class="divider" />
 
