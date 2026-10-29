@@ -1,9 +1,9 @@
 {
-  "name": "payguard-paybox-plugin",
+  "name": "basereceipt-service",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "PayBox-oriented URL phishing checks, x402 payment-intent policy checks, and privacy-conscious threat-report drafts",
+  "description": "BaseReceipt — Non-custodial USDC payment verification service and demo on Base",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
