@@ -245,7 +245,8 @@ function loadHtml(name) {
 
 const htmlCache = {};
 function serveHtml(res, name, fallback) {
-  if (!htmlCache[name]) htmlCache[name] = loadHtml(name);
+  const isProd = process.env.NODE_ENV === "production";
+  if (!isProd || !htmlCache[name]) htmlCache[name] = loadHtml(name);
   const html = htmlCache[name] || fallback;
   if (!html) return false;
   res.writeHead(200, {
