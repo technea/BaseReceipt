@@ -5,35 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BaseReceipt — Verify USDC Payments on Base</title>
   <meta name="description" content="Non-custodial, open-source USDC payment verification SDK for Base. Verify payments on-chain without holding funds or storing keys." />
-  <meta property="og:title" content="BaseReceipt" />
-  <meta property="og:description" content="Verify USDC payments on Base. Non-custodial, open source." />
-  <meta property="og:type" content="website" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@coinbase/wallet-sdk@4.0.3/dist/index.umd.js"></script>
   <style>
     :root {
       --bg: #f8fafc;
-      --bg-card: rgba(255, 255, 255, 0.85);
-      --bg-card-subtle: #f1f5f9;
+      --bg-card: #ffffff;
       --border: #e2e8f0;
       --border-accent: rgba(0, 82, 255, 0.25);
       --accent: #0052ff;
-      --accent-hover: #003ecb;
-      --accent-glow: rgba(0, 82, 255, 0.15);
-      --accent-gradient: linear-gradient(135deg, #0052ff 0%, #2563eb 50%, #38bdf8 100%);
+      --accent-hover: #0045d8;
+      --accent-light: #eff6ff;
+      --accent-gradient: linear-gradient(135deg, #0052ff 0%, #2563eb 50%, #06b6d4 100%);
       --text: #0f172a;
       --text-muted: #64748b;
       --green: #10b981;
-      --green-bg: #ecfdf5;
-      --green-border: #a7f3d0;
-      --code-bg: #0f172a;
-      --code-text: #f8fafc;
-      --radius: 16px;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
-      --shadow-md: 0 10px 25px -5px rgba(0, 82, 255, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
-      --shadow-lg: 0 20px 35px -10px rgba(0, 82, 255, 0.12), 0 1px 3px rgba(0,0,0,0.05);
+      --green-light: #ecfdf5;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+      --shadow-md: 0 12px 30px -6px rgba(0, 82, 255, 0.1), 0 4px 12px -2px rgba(0,0,0,0.05);
+      --shadow-lg: 0 25px 50px -12px rgba(0, 82, 255, 0.18);
+      --radius: 18px;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -48,607 +41,576 @@
       position: relative;
     }
 
-    /* Ambient animated background gradients */
-    .ambient-bg {
+    /* Animated background glow */
+    .bg-mesh {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
+      top: 0; left: 0; width: 100vw; height: 100vh;
       pointer-events: none;
       z-index: 0;
-      overflow: hidden;
-    }
-    .blob {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(90px);
-      opacity: 0.5;
-      animation: float 20s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .blob-1 {
-      width: 450px;
-      height: 450px;
-      background: #bfdbfe;
-      top: -100px;
-      right: -50px;
-      animation-duration: 18s;
-    }
-    .blob-2 {
-      width: 500px;
-      height: 500px;
-      background: #e0e7ff;
-      top: 40%;
-      left: -150px;
-      animation-duration: 25s;
-    }
-    .blob-3 {
-      width: 350px;
-      height: 350px;
-      background: #ccfbf1;
-      bottom: -100px;
-      right: 20%;
-      animation-duration: 22s;
+      background: 
+        radial-gradient(circle at 15% 20%, rgba(0, 82, 255, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 85% 30%, rgba(6, 182, 212, 0.09) 0%, transparent 45%),
+        radial-gradient(circle at 50% 80%, rgba(16, 185, 129, 0.06) 0%, transparent 50%);
     }
 
-    @keyframes float {
-      0% { transform: translate(0, 0) scale(1); }
-      50% { transform: translate(40px, 30px) scale(1.08); }
-      100% { transform: translate(-30px, -20px) scale(0.95); }
-    }
+    .wrapper { position: relative; z-index: 1; }
 
-    /* Container wraps content above ambient bg */
-    .app-wrapper {
-      position: relative;
-      z-index: 1;
-    }
-
-    a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
-    a:hover { color: var(--accent-hover); text-decoration: underline; }
-
-    /* Nav */
+    /* Navigation */
     nav {
       position: sticky; top: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
       padding: 1.1rem 2.5rem;
-      background: rgba(248, 250, 252, 0.85);
+      background: rgba(255, 255, 255, 0.88);
       backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
-      transition: all 0.3s;
     }
-    .nav-logo {
-      font-weight: 800; font-size: 1.25rem;
-      display: flex; align-items: center; gap: 0.6rem;
-      color: var(--text);
-      letter-spacing: -0.02em;
+    .brand {
+      display: flex; align-items: center; gap: 0.65rem;
+      font-size: 1.25rem; font-weight: 800; color: var(--text);
+      text-decoration: none;
     }
-    .nav-logo-icon {
+    .brand-logo {
       width: 32px; height: 32px;
       background: var(--accent-gradient);
       border-radius: 9px;
       display: flex; align-items: center; justify-content: center;
       color: #fff;
-      box-shadow: 0 4px 12px rgba(0, 82, 255, 0.3);
-      animation: pulse-soft 3s infinite;
+      box-shadow: 0 4px 14px rgba(0, 82, 255, 0.35);
     }
-    .nav-links { display: flex; gap: 1.75rem; align-items: center; font-size: 0.92rem; font-weight: 500; }
-    .nav-links a { color: var(--text-muted); text-decoration: none; }
-    .nav-links a:hover { color: var(--text); }
+    .nav-items { display: flex; align-items: center; gap: 1.5rem; font-size: 0.92rem; font-weight: 500; }
+    .nav-items a { color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
+    .nav-items a:hover { color: var(--text); }
 
     .btn {
       display: inline-flex; align-items: center; gap: 0.5rem;
-      padding: 0.65rem 1.25rem;
-      border-radius: 10px;
-      font-size: 0.9rem; font-weight: 600;
-      cursor: pointer; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 0.65rem 1.3rem; border-radius: 11px;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      text-decoration: none !important; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       border: 1px solid transparent;
-      text-decoration: none !important;
     }
     .btn-primary {
-      background: var(--accent);
-      color: #fff;
+      background: var(--accent); color: #fff;
       box-shadow: 0 4px 14px rgba(0, 82, 255, 0.25);
     }
     .btn-primary:hover {
-      background: var(--accent-hover);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0, 82, 255, 0.35);
-      color: #fff;
+      background: var(--accent-hover); transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(0, 82, 255, 0.35); color: #fff;
     }
     .btn-outline {
-      background: #ffffff;
-      border: 1px solid var(--border);
-      color: var(--text);
+      background: #ffffff; border: 1px solid var(--border); color: var(--text);
       box-shadow: var(--shadow-sm);
     }
     .btn-outline:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
+      border-color: var(--accent); color: var(--accent);
+      transform: translateY(-2px); box-shadow: var(--shadow-md);
     }
 
-    /* Hero */
+    /* Hero Section with Live Visual Component */
     .hero {
-      max-width: 980px; margin: 0 auto;
-      padding: 5.5rem 2rem 3rem;
-      text-align: center;
+      max-width: 1200px; margin: 0 auto;
+      padding: 4.5rem 2rem 3rem;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 3.5rem; align-items: center;
     }
+    @media (max-width: 960px) {
+      .hero { grid-template-columns: 1fr; text-align: center; gap: 2.5rem; }
+      .hero-left { margin: 0 auto; max-width: 600px; }
+      .hero-actions { justify-content: center; }
+    }
+
     .badge-pill {
       display: inline-flex; align-items: center; gap: 0.5rem;
-      padding: 0.35rem 0.95rem;
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-radius: 999px;
-      font-size: 0.82rem; font-weight: 700;
-      color: var(--accent);
-      margin-bottom: 1.75rem;
-      box-shadow: var(--shadow-sm);
-      animation: badgeBounce 4s ease-in-out infinite;
+      padding: 0.35rem 0.9rem; background: var(--accent-light);
+      border: 1px solid #bfdbfe; border-radius: 999px;
+      font-size: 0.8rem; font-weight: 700; color: var(--accent);
+      margin-bottom: 1.25rem;
     }
     .badge-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 8px var(--accent);
-      animation: pulse-dot 2s infinite;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent); box-shadow: 0 0 10px var(--accent);
+      animation: pulse 2s infinite;
     }
-    @keyframes pulse-dot {
+    @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(1.3); }
-    }
-    @keyframes pulse-soft {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-    @keyframes badgeBounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-4px); }
+      50% { opacity: 0.4; transform: scale(1.3); }
     }
 
-    .hero h1 {
-      font-size: clamp(2.4rem, 6vw, 4rem);
-      font-weight: 800;
-      line-height: 1.12;
-      letter-spacing: -0.035em;
-      margin-bottom: 1.5rem;
-      color: #0f172a;
+    .hero-title {
+      font-size: clamp(2.4rem, 4.5vw, 3.6rem);
+      font-weight: 800; line-height: 1.15;
+      letter-spacing: -0.035em; margin-bottom: 1.25rem;
     }
-    .hero h1 .gradient-text {
+    .hero-title .gradient {
       background: var(--accent-gradient);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    .hero p {
-      font-size: 1.25rem;
-      color: var(--text-muted);
-      max-width: 640px;
-      margin: 0 auto 2.25rem;
-      line-height: 1.6;
+    .hero-desc {
+      font-size: 1.15rem; color: var(--text-muted);
+      margin-bottom: 2rem; line-height: 1.6;
     }
-    .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 3.5rem; }
+    .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
 
-    /* Visual Architecture Flow Diagram */
-    .visual-flow {
-      max-width: 900px;
-      margin: 0 auto 4rem;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 2.25rem 2rem;
-      box-shadow: var(--shadow-md);
-      backdrop-filter: blur(12px);
-    }
-    .visual-flow-title {
-      font-size: 0.82rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--accent);
-      margin-bottom: 1.75rem;
-      text-align: center;
-    }
-    .flow-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1.5rem;
-      position: relative;
-    }
-    .flow-node {
+    /* Interactive Live Simulation Receipt Card (The Visual Hero) */
+    .hero-visual-card {
       background: #ffffff;
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.25rem;
-      text-align: center;
-      transition: all 0.3s;
-      box-shadow: var(--shadow-sm);
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: var(--shadow-lg);
       position: relative;
-    }
-    .flow-node:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow-md);
-      border-color: #bfdbfe;
-    }
-    .flow-icon {
-      width: 44px; height: 44px;
-      margin: 0 auto 0.75rem;
-      background: #eff6ff;
-      border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.3rem;
-      color: var(--accent);
-    }
-    .flow-node h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.35rem; }
-    .flow-node p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; }
-
-    /* Transparency banner */
-    .disclaimer-banner {
-      max-width: 900px;
-      margin: 0 auto 3rem;
-      padding: 1rem 1.75rem;
-      background: var(--green-bg);
-      border: 1px solid var(--green-border);
-      border-radius: 14px;
-      font-size: 0.9rem;
-      color: #065f46;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-      box-shadow: var(--shadow-sm);
-    }
-    .disclaimer-item { display: flex; align-items: center; gap: 0.4rem; font-weight: 600; }
-
-    /* Feature Grid */
-    .features-section {
-      max-width: 900px;
-      margin: 0 auto 4rem;
-      padding: 0 1.5rem;
-    }
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 1.5rem;
-    }
-    .feature-card {
-      background: #ffffff;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.75rem;
-      box-shadow: var(--shadow-sm);
-      transition: all 0.3s;
-    }
-    .feature-card:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow-md);
-      border-color: #cbd5e1;
-    }
-    .feature-icon-box {
-      width: 48px; height: 48px;
-      border-radius: 12px;
-      background: #eff6ff;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.4rem;
-      margin-bottom: 1.25rem;
-    }
-    .feature-card h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem; }
-    .feature-card p { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; }
-
-    /* Section layout */
-    .content-section {
-      max-width: 900px;
-      margin: 0 auto 4rem;
-      padding: 0 1.5rem;
-    }
-    .section-tag {
-      font-size: 0.78rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.08em;
-      color: var(--accent); margin-bottom: 0.5rem;
-    }
-    .section-title {
-      font-size: 1.85rem; font-weight: 800;
-      letter-spacing: -0.02em; margin-bottom: 0.75rem;
-    }
-    .section-desc { font-size: 1.05rem; color: var(--text-muted); margin-bottom: 2rem; }
-
-    /* Code preview card */
-    .code-card {
-      background: var(--code-bg);
-      border: 1px solid #1e293b;
-      border-radius: var(--radius);
       overflow: hidden;
-      box-shadow: 0 15px 30px rgba(15, 23, 42, 0.15);
     }
-    .code-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0.9rem 1.25rem;
-      background: #1e293b;
-      font-size: 0.8rem; color: #94a3b8; font-family: 'JetBrains Mono', monospace;
+    .hero-visual-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 5px;
+      background: var(--accent-gradient);
     }
-    .code-dots { display: flex; gap: 7px; }
-    .code-dots span { width: 11px; height: 11px; border-radius: 50%; }
-    .code-dots .r { background: #ef4444; }
-    .code-dots .y { background: #f59e0b; }
-    .code-dots .g { background: #10b981; }
-    pre {
-      padding: 1.5rem;
-      overflow-x: auto;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      line-height: 1.7;
-      color: #e2e8f0;
+    .card-header-row {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #f1f5f9;
     }
-    .kw { color: #f43f5e; font-weight: 600; }
-    .fn { color: #38bdf8; }
-    .str { color: #34d399; }
-    .cm { color: #64748b; font-style: italic; }
+    .card-header-row .title { font-weight: 700; font-size: 1.05rem; }
+    .live-badge {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: var(--green-light); border: 1px solid #a7f3d0;
+      color: var(--green); padding: 0.2rem 0.65rem; border-radius: 999px;
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    }
+    .live-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
 
-    /* Interactive Demo Box */
-    .demo-card {
-      background: #ffffff;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 2.25rem;
+    /* Animated verification pipeline steps inside card */
+    .anim-pipeline {
+      display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem;
+    }
+    .anim-step {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 0.9rem 1.1rem; border-radius: 12px;
+      background: #f8fafc; border: 1px solid #f1f5f9;
+      transition: all 0.3s;
+    }
+    .anim-step.active {
+      background: #f0f7ff; border-color: #bfdbfe;
+      transform: translateX(4px); box-shadow: 0 4px 12px rgba(0, 82, 255, 0.08);
+    }
+    .anim-step-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      background: #ffffff; border: 1px solid var(--border);
+      font-size: 1.1rem; flex-shrink: 0;
+    }
+    .anim-step.active .anim-step-icon {
+      background: var(--accent); color: #fff; border-color: var(--accent);
+      box-shadow: 0 2px 8px rgba(0, 82, 255, 0.3);
+    }
+    .anim-step-text .label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); }
+    .anim-step-text .val { font-size: 0.9rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+
+    /* Real-Time Live Animated Simulator Output */
+    .sim-receipt-box {
+      background: #0f172a; border-radius: 14px; padding: 1.25rem;
+      color: #f8fafc; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
+    }
+    .sim-receipt-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+    .sim-receipt-row:last-child { margin-bottom: 0; }
+    .sim-label { color: #94a3b8; }
+    .sim-val { color: #38bdf8; font-weight: 600; }
+    .sim-val.green { color: #34d399; font-weight: 700; }
+
+    /* Visual Architecture Blueprint Diagram Section */
+    .blueprint-section {
+      max-width: 1100px; margin: 3rem auto 5rem; padding: 0 2rem;
+    }
+    .blueprint-box {
+      background: #ffffff; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 3rem 2.5rem;
+      box-shadow: var(--shadow-md); position: relative;
+    }
+    .blueprint-header { text-align: center; margin-bottom: 3rem; }
+    .blueprint-tag {
+      font-size: 0.8rem; font-weight: 800; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem;
+    }
+    .blueprint-title {
+      font-size: 2rem; font-weight: 800; letter-spacing: -0.02em;
+    }
+
+    /* Interactive diagram nodes with connecting laser lines */
+    .diagram-track {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem; position: relative;
+    }
+    @media (max-width: 860px) {
+      .diagram-track { grid-template-columns: 1fr; }
+    }
+    .diagram-card {
+      background: #f8fafc; border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.5rem 1.25rem;
+      text-align: center; position: relative;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .diagram-card:hover {
+      background: #ffffff; border-color: #bfdbfe;
+      transform: translateY(-6px); box-shadow: var(--shadow-md);
+    }
+    .diagram-number {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--accent-light); color: var(--accent);
+      font-size: 0.85rem; font-weight: 800; display: flex;
+      align-items: center; justify-content: center;
+      margin: 0 auto 0.75rem; border: 1px solid #bfdbfe;
+    }
+    .diagram-icon {
+      font-size: 2rem; margin-bottom: 0.75rem;
+      animation: floatIcon 3s ease-in-out infinite alternate;
+    }
+    @keyframes floatIcon {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-4px); }
+    }
+    .diagram-card h4 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .diagram-card p { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; }
+
+    /* Features 3-Column */
+    .features-row {
+      max-width: 1100px; margin: 0 auto 5rem; padding: 0 2rem;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.75rem;
+    }
+    @media (max-width: 860px) {
+      .features-row { grid-template-columns: 1fr; }
+    }
+    .feature-item {
+      background: #ffffff; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 2rem 1.75rem;
+      box-shadow: var(--shadow-sm); transition: all 0.3s;
+    }
+    .feature-item:hover {
+      transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: #cbd5e1;
+    }
+    .feature-item .f-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: var(--accent-light); display: flex;
+      align-items: center; justify-content: center;
+      font-size: 1.5rem; margin-bottom: 1.25rem;
+    }
+    .feature-item h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .feature-item p { font-size: 0.92rem; color: var(--text-muted); line-height: 1.6; }
+
+    /* Code & Live Wallet Section */
+    .section-container {
+      max-width: 1100px; margin: 0 auto 5rem; padding: 0 2rem;
+    }
+    .section-headline { margin-bottom: 2rem; }
+    .section-headline h2 { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; }
+    .section-headline p { font-size: 1.1rem; color: var(--text-muted); }
+
+    /* Code Card */
+    .code-box {
+      background: #0f172a; border-radius: var(--radius);
+      overflow: hidden; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+      border: 1px solid #1e293b;
+    }
+    .code-top {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.9rem 1.5rem; background: #1e293b; color: #94a3b8;
+      font-size: 0.8rem; font-family: 'JetBrains Mono', monospace;
+    }
+    .dots { display: flex; gap: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-r { background: #ef4444; } .dot-y { background: #f59e0b; } .dot-g { background: #10b981; }
+    pre {
+      padding: 1.75rem; overflow-x: auto; font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem; line-height: 1.7; color: #e2e8f0;
+    }
+    .c-kw { color: #f43f5e; font-weight: 600; }
+    .c-fn { color: #38bdf8; }
+    .c-str { color: #34d399; }
+    .c-cm { color: #64748b; font-style: italic; }
+
+    /* Interactive Demo Playground Card */
+    .demo-interactive-card {
+      background: #ffffff; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 2.5rem;
       box-shadow: var(--shadow-lg);
     }
-    .wallet-status-bar {
-      background: var(--bg-card-subtle);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.25rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1.25rem;
-      margin-bottom: 1.75rem;
+    .wallet-bar {
+      background: #f8fafc; border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.25rem 1.5rem;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;
     }
-    .status-col .status-lbl { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
-    .status-col .status-val { font-size: 0.95rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-    
-    .demo-steps { list-style: none; counter-reset: step; margin-bottom: 2rem; }
-    .demo-steps li {
-      counter-increment: step;
-      display: flex; align-items: flex-start; gap: 0.9rem;
-      padding: 0.75rem 0;
-      border-bottom: 1px solid #f1f5f9;
-      font-size: 0.95rem;
+    .w-col .w-lbl { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .w-col .w-val { font-size: 1rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+
+    .steps-list { list-style: none; counter-reset: st; margin-bottom: 2rem; }
+    .steps-list li {
+      counter-increment: st; display: flex; align-items: flex-start; gap: 1rem;
+      padding: 0.85rem 0; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem;
     }
-    .demo-steps li:last-child { border-bottom: none; }
-    .demo-steps li::before {
-      content: counter(step);
-      flex-shrink: 0;
-      width: 26px; height: 26px;
-      border-radius: 50%;
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      color: var(--accent);
-      font-weight: 700;
-      font-size: 0.8rem;
+    .steps-list li:last-child { border-bottom: none; }
+    .steps-list li::before {
+      content: counter(st); flex-shrink: 0; width: 28px; height: 28px;
+      border-radius: 50%; background: var(--accent-light); border: 1px solid #bfdbfe;
+      color: var(--accent); font-weight: 800; font-size: 0.82rem;
       display: flex; align-items: center; justify-content: center;
     }
 
-    /* Status display banner */
-    .demo-console {
-      display: none;
-      margin-top: 1.5rem;
-      background: #0f172a;
-      border-radius: 12px;
-      padding: 1.25rem;
-      color: #f8fafc;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      box-shadow: var(--shadow-md);
-      animation: fadeIn 0.3s ease-in;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
+    .demo-feedback-terminal {
+      display: none; margin-top: 1.5rem; background: #0f172a;
+      border-radius: 12px; padding: 1.25rem; color: #f8fafc;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
     }
 
-    /* What it does not do */
-    .limitations-card {
-      background: #ffffff;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 2rem;
-      box-shadow: var(--shadow-sm);
+    /* What it does not do card */
+    .no-list {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem; list-style: none;
     }
-    .limitations-list { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
-    .limitations-list li {
+    .no-list li {
       display: flex; align-items: center; gap: 0.75rem;
-      font-size: 0.92rem; color: var(--text-muted);
+      background: #ffffff; border: 1px solid var(--border);
+      border-radius: 12px; padding: 1rem 1.25rem; font-size: 0.92rem; color: var(--text);
     }
-    .limitations-list li::before {
-      content: "✕";
-      font-weight: 800;
-      color: #ef4444;
+    .no-icon {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: #fef2f2; color: #ef4444; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; font-size: 0.75rem;
       flex-shrink: 0;
-      background: #fef2f2;
-      width: 24px; height: 24px;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.75rem;
     }
 
     /* Footer */
     footer {
-      border-top: 1px solid var(--border);
-      padding: 3.5rem 2rem 2.5rem;
-      text-align: center;
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      background: #ffffff;
+      border-top: 1px solid var(--border); background: #ffffff;
+      padding: 3.5rem 2rem 2.5rem; text-align: center;
+      color: var(--text-muted); font-size: 0.92rem;
     }
-    .footer-links { display: flex; justify-content: center; gap: 1.5rem; margin-bottom: 1.25rem; }
+    .f-links { display: flex; justify-content: center; gap: 1.75rem; margin-bottom: 1.25rem; }
+    .f-links a { color: var(--text-muted); text-decoration: none; }
+    .f-links a:hover { color: var(--text); }
   </style>
 </head>
 <body>
 
-<div class="ambient-bg">
-  <div class="blob blob-1"></div>
-  <div class="blob blob-2"></div>
-  <div class="blob blob-3"></div>
-</div>
+<div class="bg-mesh"></div>
 
-<div class="app-wrapper">
+<div class="wrapper">
   <!-- Nav -->
   <nav>
-    <a href="/" class="nav-logo">
-      <div class="nav-logo-icon">
+    <a href="/" class="brand">
+      <div class="brand-logo">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="20 6 9 17 4 12"></polyline>
         </svg>
       </div>
       BaseReceipt
     </a>
-    <div class="nav-links">
-      <a href="#flow">How It Works</a>
-      <a href="#quickstart">SDK</a>
-      <a href="#demo">Live Demo</a>
-      <a href="/receipts">Receipts</a>
+    <div class="nav-items">
+      <a href="#architecture">Architecture</a>
+      <a href="#quickstart">TypeScript SDK</a>
+      <a href="#demo">Live Playground</a>
+      <a href="/receipts">Receipts Log</a>
       <a href="https://github.com/technea/BaseReceipt" target="_blank" rel="noopener">GitHub ↗</a>
       <button id="navConnectBtn" class="btn btn-outline" onclick="connectWallet()">Connect Wallet</button>
-      <a class="btn btn-primary" href="#demo">Test Pay →</a>
+      <a class="btn btn-primary" href="#demo">Pay 0.10 USDC →</a>
     </div>
   </nav>
 
-  <!-- Hero -->
+  <!-- Hero with Live Visual Component -->
   <section class="hero">
-    <div class="badge-pill">
-      <span class="badge-dot"></span>
-      Native to Base Mainnet & Base Sepolia
-    </div>
-    <h1>Verify <span class="gradient-text">USDC Payments</span><br />Directly on Base</h1>
-    <p>The open-source, non-custodial verification engine for developers and AI agents. Read public on-chain transfer events without touching funds or private keys.</p>
-    
-    <div class="hero-actions">
-      <a class="btn btn-primary" href="#demo">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-        Try Interactive Demo
-      </a>
-      <a class="btn btn-outline" href="https://github.com/technea/BaseReceipt" target="_blank" rel="noopener">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
-        GitHub Repository
-      </a>
-      <a class="btn btn-outline" href="/receipts">View Receipts Log</a>
-    </div>
-
-    <!-- Visual Architecture Flow -->
-    <div class="visual-flow" id="flow">
-      <div class="visual-flow-title">Visual Payment Verification Architecture</div>
-      <div class="flow-grid">
-        <div class="flow-node">
-          <div class="flow-icon">⚡</div>
-          <h4>1. Invoice Created</h4>
-          <p>Merchant or x402 endpoint specifies USDC amount & recipient wallet.</p>
-        </div>
-        <div class="flow-node">
-          <div class="flow-icon">📱</div>
-          <h4>2. Peer-to-Peer Transfer</h4>
-          <p>Payer sends USDC directly to recipient on Base. Funds never touch intermediaries.</p>
-        </div>
-        <div class="flow-node">
-          <div class="flow-icon">🔍</div>
-          <h4>3. Circle Contract Read</h4>
-          <p>BaseReceipt inspects official USDC ERC-20 Transfer logs via Base RPC.</p>
-        </div>
-        <div class="flow-node">
-          <div class="flow-icon">✅</div>
-          <h4>4. Receipt & Webhook</h4>
-          <p>Replay checked via ClaimStore. Webhook fired with HMAC signature.</p>
-        </div>
+    <div class="hero-left">
+      <div class="badge-pill">
+        <span class="badge-dot"></span>
+        Native to Base Mainnet & Sepolia
+      </div>
+      <h1 class="hero-title">
+        Verify <span class="gradient">USDC Payments</span> Directly on Base.
+      </h1>
+      <p class="hero-desc">
+        The non-custodial payment verification engine. Verify peer-to-peer USDC transactions on-chain in milliseconds without holding funds, running escrows, or touching private keys.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#demo">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          Try Live Demo
+        </a>
+        <a class="btn btn-outline" href="https://github.com/technea/BaseReceipt" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+          GitHub Code
+        </a>
+        <a class="btn btn-outline" href="/receipts">Public Receipts Log</a>
       </div>
     </div>
 
-    <!-- Trust banner -->
-    <div class="disclaimer-banner">
-      <div class="disclaimer-item"><span>🔒</span> 100% Non-Custodial</div>
-      <div class="disclaimer-item"><span>⚡</span> Read-Only Base RPC</div>
-      <div class="disclaimer-item"><span>🔑</span> No Private Keys</div>
-      <div class="disclaimer-item"><span>📜</span> Official Circle USDC Contracts</div>
+    <!-- Live Animated Visual Card (Real-Time Representation) -->
+    <div class="hero-visual-card">
+      <div class="card-header-row">
+        <span class="title">Live On-Chain Pipeline</span>
+        <span class="live-badge"><span class="live-badge-dot"></span> Base Sepolia 84532</span>
+      </div>
+
+      <div class="anim-pipeline">
+        <div class="anim-step active">
+          <div class="anim-step-icon">📜</div>
+          <div class="anim-step-text">
+            <div class="label">Invoice Generated</div>
+            <div class="val">0.10 USDC · Memo: Demo Quote</div>
+          </div>
+        </div>
+        <div class="anim-step active">
+          <div class="anim-step-icon">⚡</div>
+          <div class="anim-step-text">
+            <div class="label">Official USDC Contract Event</div>
+            <div class="val">Transfer(0xPayer, 0xRecipient, 100000)</div>
+          </div>
+        </div>
+        <div class="anim-step active">
+          <div class="anim-step-icon">🛡️</div>
+          <div class="anim-step-text">
+            <div class="label">Replay & Claim Check</div>
+            <div class="val">ClaimStore: Unclaimed & Nonce Valid</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sim-receipt-box">
+        <div class="sim-receipt-row">
+          <span class="sim-label">Status</span>
+          <span class="sim-val green">✓ CONFIRMED</span>
+        </div>
+        <div class="sim-receipt-row">
+          <span class="sim-label">Amount Verified</span>
+          <span class="sim-val">$0.10 USDC (100,000 atomic)</span>
+        </div>
+        <div class="sim-receipt-row">
+          <span class="sim-label">USDC Contract</span>
+          <span class="sim-val">0x036CbD...dCF7e (Circle)</span>
+        </div>
+        <div class="sim-receipt-row">
+          <span class="sim-label">Custody Mode</span>
+          <span class="sim-val green">100% Non-Custodial</span>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- Features -->
-  <section class="features-section">
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon-box">🛡️</div>
-        <h3>True Non-Custodial</h3>
-        <p>Your money is yours. BaseReceipt never acts as a custodial escrow or router. Payments move direct from payer wallet to merchant wallet.</p>
+  <!-- Visual Architecture Blueprint (Clear visual representation) -->
+  <section class="blueprint-section" id="architecture">
+    <div class="blueprint-box">
+      <div class="blueprint-header">
+        <div class="blueprint-tag">Visual Verification Blueprint</div>
+        <h2 class="blueprint-title">How BaseReceipt Verifies Without Custody</h2>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon-box">⛓️</div>
-        <h3>Official Base Contracts</h3>
-        <p>Hardcoded verification against Circle's official USDC smart contract addresses on Base Mainnet and Sepolia. Zero fake-token vulnerabilities.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon-box">🤖</div>
-        <h3>Agent & x402 Native</h3>
-        <p>Built-in support for HTTP 402 Payment Required and standard Bazaar discovery catalogs, allowing autonomous AI agents to negotiate and pay seamlessly.</p>
+
+      <div class="diagram-track">
+        <div class="diagram-card">
+          <div class="diagram-number">1</div>
+          <div class="diagram-icon">🧾</div>
+          <h4>Invoice Created</h4>
+          <p>Merchant server calls <code>createInvoice()</code> specifying amount in USDC, recipient wallet address, and expiry.</p>
+        </div>
+
+        <div class="diagram-card">
+          <div class="diagram-number">2</div>
+          <div class="diagram-icon">📲</div>
+          <h4>P2P Transfer</h4>
+          <p>User or AI Agent pays directly from their wallet (Coinbase/Base) to the merchant wallet on Base. Funds never touch BaseReceipt.</p>
+        </div>
+
+        <div class="diagram-card">
+          <div class="diagram-number">3</div>
+          <div class="diagram-icon">🔎</div>
+          <h4>Base RPC Query</h4>
+          <p>BaseReceipt reads receipt from native Base nodes. Inspects <code>Transfer</code> event emitted by the verified Circle contract.</p>
+        </div>
+
+        <div class="diagram-card">
+          <div class="diagram-number">4</div>
+          <div class="diagram-icon">✅</div>
+          <h4>Claim & Receipt</h4>
+          <p>Deduplicates against ClaimStore to eliminate replay attacks. Returns cryptographic confirmation and fires signed webhook.</p>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- Quickstart -->
-  <section class="content-section" id="quickstart">
-    <div class="section-tag">Developers</div>
-    <h2 class="section-title">Verify in 10 lines of TypeScript</h2>
-    <p class="section-desc">Integrate the lightweight, zero-dependency SDK into any Node.js, Next.js, or Express application.</p>
-    
-    <div class="code-card">
-      <div class="code-header">
-        <div class="code-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
-        <span>sdk-example.ts</span>
-        <span>Base SDK</span>
-      </div>
-      <pre><span class="kw">import</span> { createInvoice, verifyPayment, MemoryClaimStore } <span class="kw">from</span> <span class="str">"basereceipt"</span>;
+  <!-- Features Grid -->
+  <section class="features-row">
+    <div class="feature-item">
+      <div class="f-icon">🔒</div>
+      <h3>Strict Non-Custodial</h3>
+      <p>BaseReceipt never holds, pools, or forwards tokens. We never ask for or store private keys, completely removing custodial risk.</p>
+    </div>
+    <div class="feature-item">
+      <div class="f-icon">📜</div>
+      <h3>Official Circle USDC</h3>
+      <p>Hardcoded verification against official Circle contracts on Base Mainnet (<code>0x8335...</code>) and Sepolia (<code>0x036C...</code>). Zero counterfeit token risk.</p>
+    </div>
+    <div class="feature-item">
+      <div class="f-icon">🤖</div>
+      <h3>x402 & Agent Ready</h3>
+      <p>Standard HTTP 402 challenge flow and <code>/.well-known/x402-bazaar.json</code> discovery catalog for autonomous AI agents.</p>
+    </div>
+  </section>
 
-<span class="cm">// 1. Generate an invoice (10 cents USDC on Base Sepolia)</span>
-<span class="kw">const</span> invoice = <span class="fn">createInvoice</span>({
-  recipient: <span class="str">"0xYourWalletAddress..."</span>,
-  amountUsdc: <span class="str">"0.10"</span>,
-  network: <span class="str">"base-sepolia"</span>, <span class="cm">// or "base-mainnet"</span>
+  <!-- SDK Code Preview -->
+  <section class="section-container" id="quickstart">
+    <div class="section-headline">
+      <h2>Verify with 10 lines of TypeScript</h2>
+      <p>Install the <code>basereceipt</code> package and verify payments in any Node.js, Express, or Next.js app.</p>
+    </div>
+
+    <div class="code-box">
+      <div class="code-top">
+        <div class="dots"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+        <span>index.ts — BaseReceipt SDK</span>
+        <span>Base Sepolia & Mainnet</span>
+      </div>
+      <pre><span class="c-kw">import</span> { createInvoice, verifyPayment, MemoryClaimStore } <span class="c-kw">from</span> <span class="c-str">"basereceipt"</span>;
+
+<span class="c-cm">// 1. Generate an invoice for 0.10 USDC on Base Sepolia</span>
+<span class="c-kw">const</span> invoice = <span class="c-fn">createInvoice</span>({
+  recipient: <span class="c-str">"0xYourWalletAddress..."</span>,
+  amountUsdc: <span class="c-str">"0.10"</span>,
+  network: <span class="c-str">"base-sepolia"</span>, <span class="c-cm">// or "base-mainnet"</span>
 });
 
-<span class="cm">// 2. Verify incoming transaction hash against the official USDC contract</span>
-<span class="kw">const</span> claimStore = <span class="kw">new</span> <span class="fn">MemoryClaimStore</span>(); <span class="cm">// or SupabaseClaimStore</span>
-<span class="kw">const</span> result = <span class="kw">await</span> <span class="fn">verifyPayment</span>(invoice, <span class="str">"0xTxHash..."</span>, { claimStore });
+<span class="c-cm">// 2. Verify incoming transaction hash directly on Base RPC</span>
+<span class="c-kw">const</span> claimStore = <span class="c-kw">new</span> <span class="c-fn">MemoryClaimStore</span>(); <span class="c-cm">// or SupabaseClaimStore</span>
+<span class="c-kw">const</span> result = <span class="c-kw">await</span> <span class="c-fn">verifyPayment</span>(invoice, <span class="c-str">"0xTxHash..."</span>, { claimStore });
 
-<span class="cm">// 3. Grant instant access upon confirmation</span>
-<span class="kw">if</span> (result.status === <span class="str">"confirmed"</span> || result.status === <span class="str">"overpaid"</span>) {
-  console.<span class="fn">log</span>(<span class="str">"✓ Verified on Base!"</span>, result.paidAtomic);
+<span class="c-cm">// 3. Grant access upon verified on-chain confirmation</span>
+<span class="c-kw">if</span> (result.status === <span class="c-str">"confirmed"</span> || result.status === <span class="c-str">"overpaid"</span>) {
+  console.<span class="c-fn">log</span>(<span class="c-str">"✓ Payment Verified on Base!"</span>, result.paidAtomic);
 }</pre>
     </div>
   </section>
 
-  <!-- Interactive Demo with Coinbase/Base Wallet -->
-  <section class="content-section" id="demo">
-    <div class="section-tag">Live Playground</div>
-    <h2 class="section-title">Interactive Base Wallet Verification</h2>
-    <p class="section-desc">Connect Coinbase Wallet / Base Smart Wallet, send 0.10 USDC on Base Sepolia, and observe instant on-chain verification.</p>
+  <!-- Interactive Playground with Coinbase/Base Wallet -->
+  <section class="section-container" id="demo">
+    <div class="section-headline">
+      <h2>Interactive Live Playground</h2>
+      <p>Connect your Coinbase Wallet or Base Smart Wallet, send 0.10 test USDC, and verify the transaction in real time.</p>
+    </div>
 
-    <div class="demo-card">
-      <div class="wallet-status-bar">
-        <div class="status-col">
-          <div class="status-lbl">Connected Wallet</div>
-          <div id="walletAddressDisplay" class="status-val">Not connected</div>
+    <div class="demo-interactive-card">
+      <div class="wallet-bar">
+        <div class="w-col">
+          <div class="w-lbl">Connected Wallet</div>
+          <div id="walletAddressDisplay" class="w-val">Not connected</div>
         </div>
-        <div class="status-col">
-          <div class="status-lbl">Network</div>
-          <div class="status-val" style="color:var(--accent);">Base Sepolia (84532)</div>
+        <div class="w-col">
+          <div class="w-lbl">Target Network</div>
+          <div class="w-val" style="color:var(--accent);">Base Sepolia (84532)</div>
         </div>
         <div>
           <button id="mainConnectBtn" class="btn btn-primary" onclick="connectWallet()">Connect Base Wallet</button>
         </div>
       </div>
 
-      <ol class="demo-steps">
-        <li><strong>Connect:</strong> Click above to link your Base Smart Wallet or browser wallet.</li>
-        <li><strong>Authorize:</strong> Click <strong>"Pay 0.10 USDC with Base Wallet"</strong> to trigger the transfer on Base Sepolia.</li>
-        <li><strong>Verify:</strong> BaseReceipt immediately tracks the block, parses the official USDC transfer event, and updates the verified status.</li>
+      <ol class="steps-list">
+        <li><strong>Connect:</strong> Click above to connect Coinbase Wallet / Base Smart Wallet.</li>
+        <li><strong>Pay:</strong> Click <strong>"Pay 0.10 USDC with Base Wallet"</strong> to submit the payment on Base Sepolia.</li>
+        <li><strong>Verify:</strong> BaseReceipt listens on-chain, confirms receipt against the Circle USDC contract, and logs the receipt.</li>
       </ol>
 
       <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center;">
@@ -659,41 +621,40 @@
         <a class="btn btn-outline" href="/api/demo/quote" target="_blank" rel="noopener">Raw x402 402 Endpoint ↗</a>
       </div>
 
-      <div id="demoStatusArea" class="demo-console">
-        <div id="demoStatusText" style="color:#38bdf8;">Processing...</div>
+      <div id="demoStatusArea" class="demo-feedback-terminal">
+        <div id="demoStatusText" style="color:#38bdf8;">Awaiting payment...</div>
         <div id="demoTxHash" style="margin-top:0.4rem;word-break:break-all;color:#94a3b8;"></div>
       </div>
     </div>
   </section>
 
-  <!-- Limitations / What it does not do -->
-  <section class="content-section">
-    <div class="section-tag">Honesty & Limits</div>
-    <h2 class="section-title">What BaseReceipt does NOT do</h2>
-    <p class="section-desc">Transparent engineering: knowing system boundaries is critical for secure payment integration.</p>
-
-    <div class="limitations-card">
-      <ul class="limitations-list">
-        <li>Does not hold or escrow funds (100% peer-to-peer)</li>
-        <li>Does not store or request private keys</li>
-        <li>Has not been third-party audited (MIT License)</li>
-        <li>Does not invent custom smart contracts</li>
-        <li>Does not fabricate data or metrics</li>
-        <li>Does not support non-Base chains</li>
-      </ul>
+  <!-- Honesty & Scope -->
+  <section class="section-container">
+    <div class="section-headline">
+      <h2>Engineering Transparency</h2>
+      <p>Explicit project boundaries for security and audit clarity.</p>
     </div>
+
+    <ul class="no-list">
+      <li><span class="no-icon">✕</span> Does not hold or pool funds (100% peer-to-peer)</li>
+      <li><span class="no-icon">✕</span> Does not request or store wallet private keys</li>
+      <li><span class="no-icon">✕</span> Has not been third-party audited (MIT License)</li>
+      <li><span class="no-icon">✕</span> Does not deploy custom smart contracts</li>
+      <li><span class="no-icon">✕</span> Does not fabricate mock receipts</li>
+      <li><span class="no-icon">✕</span> Does not support non-Base networks</li>
+    </ul>
   </section>
 
   <!-- Footer -->
   <footer>
-    <div class="footer-links">
-      <a href="https://github.com/technea/BaseReceipt" target="_blank" rel="noopener">GitHub</a>
-      <a href="/receipts">Receipts Log</a>
+    <div class="f-links">
+      <a href="https://github.com/technea/BaseReceipt" target="_blank" rel="noopener">GitHub Repo</a>
+      <a href="/receipts">Receipts Explorer</a>
       <a href="/health">Health API</a>
-      <a href="/metrics">Metrics</a>
-      <a href="/.well-known/x402-bazaar.json">x402 Catalog</a>
+      <a href="/metrics">Prometheus Metrics</a>
+      <a href="/.well-known/x402-bazaar.json">x402 Bazaar Catalog</a>
     </div>
-    <p>Built for the <strong>Base</strong> Ecosystem · MIT Open Source · Non-Custodial</p>
+    <p>BaseReceipt · Open-Source & Non-Custodial USDC Verification on <strong>Base</strong></p>
   </footer>
 </div>
 
