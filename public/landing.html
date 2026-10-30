@@ -489,6 +489,7 @@
             <div class="copy-row">
               <span class="copy-lbl">Expires:</span>
               <span class="copy-val" id="resExpiry">—</span>
+              <span id="expiryCountdown" style="margin-left:0.5rem;font-size:0.78rem;color:var(--text-muted);font-variant-numeric:tabular-nums;"></span>
             </div>
 
             <!-- Verify Section -->
@@ -499,6 +500,7 @@
                 <button class="btn btn-primary" onclick="verifyInvoicePayment()">Verify</button>
               </div>
               <div class="verify-status-banner" id="verifyStatusBanner"></div>
+              <div id="rateLimitBanner" style="display:none;margin-top:0.5rem;padding:0.5rem 0.75rem;background:var(--yellow-light);color:#92400e;border-radius:8px;font-size:0.82rem;"><i class="fa-solid fa-clock"></i> Rate limit reached. You can try again shortly.</div>
             </div>
           </div>
 
@@ -611,6 +613,28 @@ console.<span class="c-fn">log</span>(<span class="c-str">"Result:"</span>, <spa
     'base-mainnet': 8453
   };
 
+  // ── Expiry countdown timer
+  let countdownInterval = null;
+  function startExpiryCountdown(expiresAtIso) {
+    if (countdownInterval) clearInterval(countdownInterval);
+    const el = document.getElementById('expiryCountdown');
+    function update() {
+      const diff = Math.max(0, Math.floor((new Date(expiresAtIso) - Date.now()) / 1000));
+      if (diff === 0) {
+        el.textContent = '(expired)';
+        el.style.color = 'var(--red)';
+        clearInterval(countdownInterval);
+        return;
+      }
+      const m = Math.floor(diff / 60);
+      const s = diff % 60;
+      el.textContent = `(⏱ ${m}:${String(s).padStart(2,'0')} remaining)`;
+      el.style.color = diff < 60 ? 'var(--red)' : 'var(--text-muted)';
+    }
+    update();
+    countdownInterval = setInterval(update, 1000);
+  }
+
   function setDemoNetwork(net) {
     currentDemoNetwork = net;
     document.getElementById('btnNetSepolia').className = (net === 'base-sepolia') ? 'net-btn active' : 'net-btn';
@@ -629,6 +653,7 @@ console.<span class="c-fn">log</span>(<span class="c-str">"Result:"</span>, <spa
   async function generateInvoice() {
     const recipient = document.getElementById('inpRecipient').value.trim();
     const amount = document.getElementById('inpAmount').value.trim();
+    const btn = document.querySelector('[onclick="generateInvoice()"]');
 
     if (!isValidAddress(recipient)) {
       alert("Please enter a valid 20-byte Ethereum address (0x...)");
@@ -640,6 +665,9 @@ console.<span class="c-fn">log</span>(<span class="c-str">"Result:"</span>, <spa
       alert("Please enter an amount between 0.01 and 1,000 USDC.");
       return;
     }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating...';
 
     try {
       const res = await fetch('/api/invoices', {
@@ -653,11 +681,18 @@ console.<span class="c-fn">log</span>(<span class="c-str">"Result:"</span>, <spa
         })
       });
 
+      if (res.status === 429) {
+        document.getElementById('rateLimitBanner').style.display = 'block';
+        setTimeout(() => document.getElementById('rateLimitBanner').style.display = 'none', 60000);
+        return;
+      }
+
       if (!res.ok) {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({ error: 'Failed to create invoice' }));
         throw new Error(err.error || 'Failed to create invoice');
       }
 
+      document.getElementById('rateLimitBanner').style.display = 'none';
       activeInvoice = await res.json();
 
       document.getElementById('invoiceEmptyState').style.display = 'none';
@@ -669,6 +704,7 @@ console.<span class="c-fn">log</span>(<span class="c-str">"Result:"</span>, <spa
       const token = USDC_CONTRACTS[currentDemoNetwork];
       document.getElementById('resToken').innerText = token;
       document.getElementById('resExpiry').innerText = new Date(activeInvoice.expiresAt).toLocaleTimeString();
+      startExpiryCountdown(activeInvoice.expiresAt);
 
       // Render EIP-681 standard URI in QR Code
       // ethereum:<tokenAddress>@<chainId>/transfer?address=<recipient>&uint256=<atomicAmount>
@@ -693,7 +729,10 @@ console.<span class="c-fn">log</span>(<span class="c-str">"Result:"</span>, <spa
       }
 
     } catch (err) {
-      alert("Invoice error: " + err.message);
+      alert('Invoice error: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-receipt"></i> Create Invoice';
     }
   }
 

@@ -38,6 +38,9 @@ import {
   listPayments,
   getMetrics,
   isSupabaseConfigured,
+  storeWebhookDelivery,
+  listWebhookDeliveries,
+  getPaymentsByInvoice,
 } from "./lib/db.mjs";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
@@ -87,6 +90,46 @@ async function loadInvoice(id) {
     return inv;
   }
   return null;
+}
+
+// ─────────────────────────────────────────────
+// Webhook with retry + delivery log
+// ─────────────────────────────────────────────
+async function sendWebhookWithRetry(url, event, secret, maxAttempts = 3) {
+  const delays = [0, 5000, 30000]; // immediate, 5s, 30s
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    if (delays[attempt - 1] > 0) {
+      await new Promise(r => setTimeout(r, delays[attempt - 1]));
+    }
+    let statusCode = null;
+    let success = false;
+    try {
+      const result = await sendWebhook(url, event, secret);
+      statusCode = result?.status ?? 200;
+      success = statusCode >= 200 && statusCode < 300;
+    } catch (err) {
+      console.error(`[Webhook] attempt ${attempt} failed:`, err.message);
+    }
+    // Log each attempt to Supabase (best-effort)
+    if (isSupabaseConfigured()) {
+      storeWebhookDelivery({
+        invoiceId: event.invoiceId ?? event.data?.invoiceId ?? "unknown",
+        eventType: event.type ?? "payment.confirmed",
+        url,
+        statusCode,
+        success,
+        attempt,
+        payload: event,
+      }).catch(() => {});
+    }
+    if (success) {
+      console.log(`[Webhook] delivered on attempt ${attempt} → ${statusCode}`);
+      return;
+    }
+    if (attempt === maxAttempts) {
+      console.error(`[Webhook] all ${maxAttempts} attempts failed for ${url}`);
+    }
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -410,7 +453,14 @@ async function requestHandler(req, res) {
     if (req.method === "POST" && pathname === "/api/invoices") {
       route = "invoices_create";
       const ip = getClientIp(req);
-      if (!checkRateLimit(ip)) { statusCode = 429; return sendJson(res, statusCode, { error: "Rate limit exceeded." }); }
+      if (!checkRateLimit(ip)) {
+        statusCode = 429;
+        return sendJson(res, statusCode, { error: "Rate limit exceeded. Try again in 60 seconds." }, {
+          "retry-after": "60",
+          "x-ratelimit-limit": String(MAX_REQUESTS_PER_WINDOW),
+          "x-ratelimit-reset": String(Math.ceil((Date.now() + RATE_LIMIT_WINDOW_MS) / 1000)),
+        });
+      }
 
       const body = await readJson(req);
       const { recipient, amountUsdc, memo, ttlSeconds, network } = body;
@@ -472,7 +522,14 @@ async function requestHandler(req, res) {
     if (req.method === "POST" && pathname === "/api/check-payment") {
       route = "check_payment";
       const ip = getClientIp(req);
-      if (!checkRateLimit(ip)) { statusCode = 429; return sendJson(res, statusCode, { error: "Rate limit exceeded." }); }
+      if (!checkRateLimit(ip)) {
+        statusCode = 429;
+        return sendJson(res, statusCode, { error: "Rate limit exceeded. Try again in 60 seconds." }, {
+          "retry-after": "60",
+          "x-ratelimit-limit": String(MAX_REQUESTS_PER_WINDOW),
+          "x-ratelimit-reset": String(Math.ceil((Date.now() + RATE_LIMIT_WINDOW_MS) / 1000)),
+        });
+      }
 
       const body = await readJson(req);
       const { invoiceId, txHash } = body;
@@ -491,7 +548,7 @@ async function requestHandler(req, res) {
         }
         if (WEBHOOK_URL && WEBHOOK_SECRET) {
           const event = buildEvent(result, result.status === "overpaid" ? "payment.overpaid" : "payment.confirmed");
-          sendWebhook(WEBHOOK_URL, event, WEBHOOK_SECRET).catch(e => console.error("[Webhook]", e.message));
+          sendWebhookWithRetry(WEBHOOK_URL, event, WEBHOOK_SECRET).catch(e => console.error("[Webhook]", e.message));
         }
       }
 
@@ -527,6 +584,35 @@ async function requestHandler(req, res) {
       const { totalVerified, totalVolumeAtomic } = await getMetrics();
       statusCode = 200;
       return sendJson(res, statusCode, { payments, totalVerified, totalVolumeAtomic });
+    }
+
+    // ── GET /api/invoices/:id/payments → All verified payments for an invoice
+    if (req.method === "GET" && /^\/api\/invoices\/[^/]+\/payments$/.test(pathname)) {
+      route = "invoice_payments";
+      const id = pathname.split("/")[3];
+      if (!id) throwHttp(400, "Invoice ID is required.");
+
+      if (!isSupabaseConfigured()) {
+        statusCode = 200;
+        return sendJson(res, statusCode, { payments: [], message: "Database not configured — running in memory mode." });
+      }
+
+      const payments = await getPaymentsByInvoice(id);
+      statusCode = 200;
+      return sendJson(res, statusCode, { invoiceId: id, payments });
+    }
+
+    // ── GET /api/webhooks → Recent webhook delivery log
+    if (req.method === "GET" && pathname === "/api/webhooks") {
+      route = "webhooks_log";
+      if (!isSupabaseConfigured()) {
+        statusCode = 200;
+        return sendJson(res, statusCode, { deliveries: [], message: "Database not configured." });
+      }
+      const limit = Math.min(Number(parsed.searchParams.get("limit") || "20"), 100);
+      const deliveries = await listWebhookDeliveries({ limit });
+      statusCode = 200;
+      return sendJson(res, statusCode, { deliveries });
     }
 
     // ── GET /api/demo/quote → x402 demo paid endpoint
