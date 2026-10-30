@@ -60,6 +60,7 @@ const DEFAULT_NETWORK = (process.env.DEFAULT_NETWORK === "base-mainnet")
 // x402 demo config
 const DEMO_RECIPIENT = process.env.DEMO_RECIPIENT_ADDRESS;
 const DEMO_AMOUNT_USDC = process.env.DEMO_AMOUNT_USDC || "0.10"; // 10 cents
+let lastDemoRun = null;
 
 // ─────────────────────────────────────────────
 // Claim store (Supabase in prod, Memory in dev)
@@ -415,14 +416,20 @@ async function requestHandler(req, res) {
       const { recipient, amountUsdc, memo, ttlSeconds, network } = body;
 
       if (!recipient || !amountUsdc) throwHttp(400, "recipient and amountUsdc are required.");
-      if (!DEMO_RECIPIENT && !recipient) throwHttp(400, "No recipient configured.");
+      if (!/^0x[0-9a-fA-F]{40}$/.test(recipient)) throwHttp(400, "recipient must be a valid 20-byte Ethereum address.");
+      
+      const amt = Number(amountUsdc);
+      if (isNaN(amt) || amt <= 0 || amt > 10000) throwHttp(400, "amountUsdc must be between 0.01 and 10000 USDC.");
+      if (!/^\d+(\.\d{1,2})?$/.test(String(amountUsdc))) throwHttp(400, "amountUsdc can have at most 2 decimal places.");
+
+      const chosenNetwork = network === "base-mainnet" ? "base-mainnet" : "base-sepolia";
 
       const invoice = createInvoice({
         recipient: recipient,
         amountUsdc: String(amountUsdc),
-        memo: memo || "",
-        ttlSeconds: ttlSeconds ? Number(ttlSeconds) : 900,
-        network: network || DEFAULT_NETWORK,
+        memo: (memo || "").slice(0, 100),
+        ttlSeconds: ttlSeconds ? Math.min(Math.max(Number(ttlSeconds), 60), 86400) : 900,
+        network: chosenNetwork,
       });
 
       await saveInvoice(invoice);
@@ -599,6 +606,18 @@ async function requestHandler(req, res) {
         });
       }
 
+      // Track last verified demo run
+      lastDemoRun = {
+        invoiceId: result.invoiceId,
+        txHash: result.txHash,
+        paidUsdc: formatUsdc(result.paidAtomic),
+        blockNumber: result.blockNumber.toString(),
+        from: result.from,
+        recipient: result.recipient,
+        network: result.network,
+        verifiedAt: result.verifiedAt,
+      };
+
       // Payment verified — store and serve demo response
       if (isSupabaseConfigured()) {
         try { await storePayment(result); } catch {}
@@ -625,6 +644,38 @@ async function requestHandler(req, res) {
           github: "https://github.com/technea/BaseReceipt",
         },
       });
+    }
+
+    // ── GET /api/demo/last-run → Real last run record
+    if (req.method === "GET" && pathname === "/api/demo/last-run") {
+      route = "demo_last_run";
+      if (lastDemoRun) {
+        statusCode = 200;
+        return sendJson(res, statusCode, { run: lastDemoRun });
+      }
+
+      if (isSupabaseConfigured()) {
+        const rows = await listPayments({ limit: 1 });
+        if (rows && rows.length > 0) {
+          const r = rows[0];
+          statusCode = 200;
+          return sendJson(res, statusCode, {
+            run: {
+              invoiceId: r.invoice_id,
+              txHash: r.tx_hash,
+              paidUsdc: (Number(r.paid_atomic || "0") / 1e6).toFixed(2),
+              blockNumber: r.block_number,
+              from: r.from_address,
+              recipient: DEMO_RECIPIENT || "0x...",
+              network: r.network,
+              verifiedAt: r.verified_at,
+            }
+          });
+        }
+      }
+
+      statusCode = 200;
+      return sendJson(res, statusCode, { run: null });
     }
 
     // 404

@@ -3,20 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BaseReceipt — High-Speed Non-Custodial USDC Verification on Base</title>
-  <meta name="description" content="Production-grade, non-custodial USDC payment verification engine and SDK built natively for Base Mainnet & Base Sepolia." />
+  <title>BaseReceipt — Non-Custodial USDC Payment Verification on Base</title>
+  <meta name="description" content="Non-custodial, open-source USDC payment verification SDK for Base. Verify payments on-chain without holding funds or storing keys." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <!-- FontAwesome 6 for crisp SVG/Vector icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  <script src="https://cdn.jsdelivr.net/npm/@coinbase/wallet-sdk@4.0.3/dist/index.umd.js"></script>
+  <!-- QR Code generation library -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
     :root {
       --bg: #f8fafc;
       --bg-card: #ffffff;
       --border: #e2e8f0;
-      --border-accent: rgba(0, 82, 255, 0.25);
       --accent: #0052ff;
       --accent-hover: #003ecb;
       --accent-light: #eff6ff;
@@ -26,11 +25,13 @@
       --text-dim: #94a3b8;
       --green: #10b981;
       --green-light: #ecfdf5;
-      --cyan: #06b6d4;
-      --cyan-light: #ecfeff;
+      --yellow: #f59e0b;
+      --yellow-light: #fffbeb;
+      --red: #ef4444;
+      --red-light: #fef2f2;
       --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
-      --shadow-md: 0 12px 30px -6px rgba(0, 82, 255, 0.1), 0 4px 12px -2px rgba(0,0,0,0.05);
-      --shadow-lg: 0 25px 50px -12px rgba(0, 82, 255, 0.18);
+      --shadow-md: 0 12px 30px -6px rgba(0, 82, 255, 0.08), 0 4px 12px -2px rgba(0,0,0,0.04);
+      --shadow-lg: 0 25px 50px -12px rgba(0, 82, 255, 0.16);
       --radius: 18px;
     }
 
@@ -46,16 +47,15 @@
       position: relative;
     }
 
-    /* Subtle background grid pattern */
     .bg-mesh {
       position: fixed;
       top: 0; left: 0; width: 100vw; height: 100vh;
       pointer-events: none;
       z-index: 0;
       background: 
-        radial-gradient(circle at 12% 18%, rgba(0, 82, 255, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 88% 28%, rgba(6, 182, 212, 0.08) 0%, transparent 45%),
-        radial-gradient(circle at 50% 85%, rgba(16, 185, 129, 0.06) 0%, transparent 50%);
+        radial-gradient(circle at 12% 18%, rgba(0, 82, 255, 0.07) 0%, transparent 40%),
+        radial-gradient(circle at 88% 28%, rgba(6, 182, 212, 0.07) 0%, transparent 45%),
+        radial-gradient(circle at 50% 85%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
     }
 
     .wrapper { position: relative; z-index: 1; }
@@ -65,23 +65,22 @@
       position: sticky; top: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
       padding: 1.1rem 3rem;
-      background: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.92);
       backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
     }
     .brand {
       display: flex; align-items: center; gap: 0.75rem;
-      font-size: 1.3rem; font-weight: 800; color: var(--text);
+      font-size: 1.25rem; font-weight: 800; color: var(--text);
       text-decoration: none;
     }
     .brand-icon {
-      width: 36px; height: 36px;
+      width: 34px; height: 34px;
       background: var(--accent-gradient);
-      border-radius: 10px;
+      border-radius: 9px;
       display: flex; align-items: center; justify-content: center;
-      color: #fff;
-      font-size: 1.1rem;
-      box-shadow: 0 4px 14px rgba(0, 82, 255, 0.35);
+      color: #fff; font-size: 1.1rem;
+      box-shadow: 0 4px 12px rgba(0, 82, 255, 0.3);
     }
     .nav-items { display: flex; align-items: center; gap: 1.75rem; font-size: 0.92rem; font-weight: 600; }
     .nav-items a { color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
@@ -91,7 +90,7 @@
       display: inline-flex; align-items: center; gap: 0.55rem;
       padding: 0.65rem 1.35rem; border-radius: 12px;
       font-size: 0.92rem; font-weight: 700; cursor: pointer;
-      text-decoration: none !important; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      text-decoration: none !important; transition: all 0.2s;
       border: 1px solid transparent;
     }
     .btn-primary {
@@ -99,8 +98,8 @@
       box-shadow: 0 4px 14px rgba(0, 82, 255, 0.25);
     }
     .btn-primary:hover {
-      background: var(--accent-hover); transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0, 82, 255, 0.35); color: #fff;
+      background: var(--accent-hover); transform: translateY(-1px);
+      box-shadow: 0 8px 22px rgba(0, 82, 255, 0.35); color: #fff;
     }
     .btn-outline {
       background: #ffffff; border: 1px solid var(--border); color: var(--text);
@@ -108,21 +107,15 @@
     }
     .btn-outline:hover {
       border-color: var(--accent); color: var(--accent);
-      transform: translateY(-2px); box-shadow: var(--shadow-md);
+      transform: translateY(-1px); box-shadow: var(--shadow-md);
     }
 
     /* Hero Section */
     .hero {
       max-width: 1280px; margin: 0 auto;
-      padding: 4.5rem 2.5rem 3rem;
-      display: grid; grid-template-columns: 1.1fr 1fr;
-      gap: 3.5rem; align-items: center;
+      padding: 4.5rem 2.5rem 3.5rem;
+      text-align: center;
     }
-    @media (max-width: 1024px) {
-      .hero { grid-template-columns: 1fr; text-align: center; gap: 3rem; }
-      .hero-actions { justify-content: center; }
-    }
-
     .badge-pill {
       display: inline-flex; align-items: center; gap: 0.6rem;
       padding: 0.4rem 1rem; background: var(--accent-light);
@@ -141,8 +134,8 @@
     }
 
     .hero-title {
-      font-size: clamp(2.5rem, 4.8vw, 3.8rem);
-      font-weight: 800; line-height: 1.12;
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      font-weight: 800; line-height: 1.15;
       letter-spacing: -0.035em; margin-bottom: 1.25rem;
     }
     .hero-title .gradient {
@@ -152,295 +145,192 @@
       -webkit-text-fill-color: transparent;
     }
     .hero-desc {
-      font-size: 1.18rem; color: var(--text-muted);
-      margin-bottom: 2rem; line-height: 1.6; max-width: 580px;
+      font-size: 1.2rem; color: var(--text-muted);
+      margin: 0 auto 2.25rem; line-height: 1.6; max-width: 680px;
     }
-    .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 3.5rem; }
 
-    /* Interactive Live Simulation Console (Hero Card) */
-    .hero-visual-card {
-      background: #ffffff;
-      border: 1px solid var(--border);
-      border-radius: 22px;
-      padding: 2.25rem;
-      box-shadow: var(--shadow-lg);
-      position: relative;
-    }
-    .hero-visual-card::before {
-      content: ''; position: absolute;
-      top: 0; left: 0; right: 0; height: 5px;
-      background: var(--accent-gradient);
-      border-radius: 22px 22px 0 0;
-    }
-
-    .card-top {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 1.75rem; padding-bottom: 1rem; border-bottom: 1px solid #f1f5f9;
-    }
-    .card-title-group { display: flex; align-items: center; gap: 0.75rem; }
-    .card-title-group .icon {
-      width: 32px; height: 32px; border-radius: 8px; background: #eff6ff;
-      color: var(--accent); display: flex; align-items: center; justify-content: center;
-    }
-    .card-title-group h3 { font-size: 1.05rem; font-weight: 800; }
-    
-    .status-tag {
-      display: inline-flex; align-items: center; gap: 0.4rem;
-      padding: 0.25rem 0.75rem; border-radius: 999px;
-      font-size: 0.75rem; font-weight: 800; text-transform: uppercase;
-      background: var(--green-light); border: 1px solid #a7f3d0; color: var(--green);
-    }
-    .status-tag .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
-
-    /* Play Simulation Button & Control Bar */
-    .sim-controls-bar {
-      display: flex; justify-content: space-between; align-items: center;
-      background: #f8fafc; border: 1px solid var(--border); border-radius: 12px;
-      padding: 0.75rem 1rem; margin-bottom: 1.5rem;
-    }
-    .sim-controls-bar .desc { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
-    .btn-play-sim {
-      background: var(--accent-gradient); color: #fff;
-      border: none; padding: 0.5rem 1.1rem; border-radius: 8px;
-      font-size: 0.85rem; font-weight: 700; cursor: pointer;
-      display: inline-flex; align-items: center; gap: 0.5rem;
-      box-shadow: 0 4px 12px rgba(0, 82, 255, 0.25);
-      transition: all 0.2s;
-    }
-    .btn-play-sim:hover { transform: scale(1.03); box-shadow: 0 6px 16px rgba(0, 82, 255, 0.35); }
-
-    /* Animated interactive visual pipeline stages */
-    .anim-pipeline {
-      display: flex; flex-direction: column; gap: 0.9rem; margin-bottom: 1.5rem;
-    }
-    .pipeline-stage {
-      display: flex; align-items: center; gap: 1rem;
-      padding: 0.9rem 1.15rem; border-radius: 14px;
-      background: #f8fafc; border: 1px solid #f1f5f9;
-      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-      position: relative;
-    }
-    .pipeline-stage.active {
-      background: #f0f7ff; border-color: #93c5fd;
-      transform: translateX(6px);
-      box-shadow: 0 4px 14px rgba(0, 82, 255, 0.1);
-    }
-    .stage-icon {
-      width: 40px; height: 40px; border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
+    /* What BaseReceipt is and isn't Box */
+    .scope-box {
+      max-width: 1100px; margin: 0 auto 5rem;
       background: #ffffff; border: 1px solid var(--border);
-      color: var(--text-muted); font-size: 1.1rem; flex-shrink: 0;
-      transition: all 0.3s;
+      border-radius: var(--radius); padding: 2.25rem;
+      box-shadow: var(--shadow-sm); display: grid; grid-template-columns: 1fr 1fr;
+      gap: 2.5rem; text-align: left;
     }
-    .pipeline-stage.active .stage-icon {
-      background: var(--accent); color: #ffffff; border-color: var(--accent);
-      box-shadow: 0 4px 12px rgba(0, 82, 255, 0.3);
+    @media (max-width: 860px) {
+      .scope-box { grid-template-columns: 1fr; gap: 1.5rem; }
     }
-    .stage-body { flex: 1; }
-    .stage-body .st-lbl { font-size: 0.75rem; text-transform: uppercase; font-weight: 800; color: var(--text-dim); }
-    .stage-body .st-val { font-size: 0.92rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-    .stage-badge {
-      font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.5rem;
-      border-radius: 6px; background: #e2e8f0; color: var(--text-muted);
-    }
-    .pipeline-stage.active .stage-badge {
-      background: #dbeafe; color: var(--accent);
-    }
+    .scope-col h4 { font-size: 1.05rem; font-weight: 800; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+    .scope-col.is h4 { color: var(--accent); }
+    .scope-col.isnt h4 { color: var(--red); }
+    .scope-col ul { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.92rem; color: var(--text-muted); }
+    .scope-col li { display: flex; align-items: flex-start; gap: 0.6rem; }
+    .scope-col.is li::before { content: "✓"; color: var(--green); font-weight: 800; }
+    .scope-col.isnt li::before { content: "✕"; color: var(--red); font-weight: 800; }
 
-    /* Live Terminal Log */
-    .live-terminal {
-      background: #0f172a; border-radius: 14px; padding: 1.25rem;
-      color: #f8fafc; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
-      box-shadow: inset 0 2px 8px rgba(0,0,0,0.4);
+    /* Section Container */
+    .section-wrap {
+      max-width: 1200px; margin: 0 auto 5rem; padding: 0 2rem;
     }
-    .terminal-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
-    .terminal-row:last-child { margin-bottom: 0; }
-    .t-dim { color: #94a3b8; }
-    .t-blue { color: #38bdf8; font-weight: 600; }
-    .t-green { color: #34d399; font-weight: 700; }
+    .section-tag {
+      font-size: 0.8rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--accent); margin-bottom: 0.5rem;
+    }
+    .section-heading {
+      font-size: 2.1rem; font-weight: 800; letter-spacing: -0.025em; margin-bottom: 0.5rem;
+    }
+    .section-sub { font-size: 1.05rem; color: var(--text-muted); margin-bottom: 2rem; }
 
-    /* Blueprint Section (Step-by-step Interactive Visual Flow) */
-    .blueprint-section {
-      max-width: 1280px; margin: 3rem auto 5.5rem; padding: 0 2.5rem;
-    }
-    .blueprint-card {
+    /* SECTION A: Live Invoice Demo Card */
+    .demo-invoice-card {
       background: #ffffff; border: 1px solid var(--border);
-      border-radius: 24px; padding: 3.5rem 3rem;
+      border-radius: var(--radius); padding: 2.5rem;
       box-shadow: var(--shadow-md);
     }
-    .blueprint-title-area { text-align: center; margin-bottom: 3.5rem; }
-    .blueprint-pill {
-      font-size: 0.8rem; font-weight: 800; color: var(--accent);
-      text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.6rem;
-    }
-    .blueprint-heading {
-      font-size: 2.25rem; font-weight: 800; letter-spacing: -0.025em;
+    .demo-notice {
+      background: #eff6ff; border: 1px solid #bfdbfe;
+      border-radius: 12px; padding: 0.9rem 1.25rem; font-size: 0.88rem;
+      color: #1e40af; margin-bottom: 1.75rem; display: flex; align-items: center; gap: 0.6rem;
     }
 
-    .flow-connector-track {
-      display: grid; grid-template-columns: repeat(4, 1fr);
-      gap: 1.5rem; position: relative;
+    .invoice-form-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;
     }
     @media (max-width: 900px) {
-      .flow-connector-track { grid-template-columns: 1fr; }
+      .invoice-form-grid { grid-template-columns: 1fr; }
     }
 
-    .step-box {
+    .form-group { margin-bottom: 1.25rem; }
+    .form-label { font-size: 0.82rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; display: block; }
+    .form-input {
+      width: 100%; padding: 0.75rem 1rem; border-radius: 10px;
+      border: 1px solid var(--border); font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem; color: var(--text); background: #f8fafc;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus { outline: none; border-color: var(--accent); background: #fff; }
+
+    /* Network Toggle */
+    .net-toggle-box {
+      display: flex; gap: 0.5rem; background: #f1f5f9; padding: 0.3rem; border-radius: 10px;
+      margin-bottom: 1.25rem;
+    }
+    .net-btn {
+      flex: 1; padding: 0.5rem; border: none; border-radius: 8px; font-weight: 700;
+      font-size: 0.85rem; cursor: pointer; background: transparent; color: var(--text-muted);
+      transition: all 0.2s;
+    }
+    .net-btn.active { background: #ffffff; color: var(--accent); box-shadow: var(--shadow-sm); }
+    .mainnet-warning {
+      display: none; background: #fffbeb; border: 1px solid #fde68a;
+      border-radius: 10px; padding: 0.75rem 1rem; font-size: 0.85rem; color: #92400e; margin-bottom: 1rem;
+    }
+
+    /* Preset amount buttons */
+    .amount-presets { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+    .preset-btn {
+      background: #f1f5f9; border: 1px solid var(--border); border-radius: 8px;
+      padding: 0.35rem 0.75rem; font-size: 0.82rem; font-weight: 700; cursor: pointer; color: var(--text);
+    }
+    .preset-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Invoice Output Result Box */
+    .invoice-result-pane {
       background: #f8fafc; border: 1px solid var(--border);
-      border-radius: 16px; padding: 1.75rem 1.5rem;
-      position: relative; transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-      cursor: pointer;
+      border-radius: 14px; padding: 1.5rem; display: none;
     }
-    .step-box:hover, .step-box.selected {
-      background: #ffffff; border-color: #93c5fd;
-      transform: translateY(-6px); box-shadow: var(--shadow-md);
-    }
-    .step-number-badge {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: var(--accent-light); color: var(--accent);
-      font-size: 0.9rem; font-weight: 800; display: flex;
-      align-items: center; justify-content: center;
-      margin-bottom: 1.25rem; border: 1px solid #bfdbfe;
-    }
-    .step-icon-wrap {
-      width: 48px; height: 48px; border-radius: 12px;
-      background: #ffffff; border: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.35rem; color: var(--accent); margin-bottom: 1.25rem;
-      box-shadow: var(--shadow-sm);
-    }
-    .step-box h4 { font-size: 1.1rem; font-weight: 800; margin-bottom: 0.5rem; }
-    .step-box p { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
+    .invoice-result-pane.visible { display: block; }
 
-    /* Interactive Explanation Panel (Appears on click of flow nodes) */
-    .flow-detail-panel {
-      margin-top: 2rem; background: #f0f7ff;
-      border: 1px solid #bfdbfe; border-radius: 16px;
-      padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between;
-      gap: 1.5rem; flex-wrap: wrap;
+    .qr-center {
+      text-align: center; margin-bottom: 1.25rem;
     }
-    .flow-detail-left { display: flex; align-items: center; gap: 1rem; }
-    .flow-detail-left .icon-circle {
-      width: 44px; height: 44px; border-radius: 50%; background: var(--accent);
-      color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+    #qrcodeCanvas {
+      background: #ffffff; padding: 12px; border-radius: 12px;
+      border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+      display: inline-block;
     }
-    .flow-detail-left h5 { font-size: 1rem; font-weight: 800; color: #1e3a8a; }
-    .flow-detail-left p { font-size: 0.9rem; color: #3b82f6; }
+    .qr-caption { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem; }
 
-    /* Features Grid */
-    .features-section {
-      max-width: 1280px; margin: 0 auto 5.5rem; padding: 0 2.5rem;
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;
+    .copy-row {
+      display: flex; justify-content: space-between; align-items: center;
+      background: #ffffff; border: 1px solid var(--border); border-radius: 8px;
+      padding: 0.5rem 0.75rem; margin-bottom: 0.5rem; font-size: 0.82rem; font-family: 'JetBrains Mono', monospace;
+    }
+    .copy-lbl { color: var(--text-muted); font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.75rem; }
+    .copy-val { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+    .btn-copy { background: transparent; border: none; cursor: pointer; color: var(--accent); font-size: 0.85rem; }
+
+    /* Paste TX & Verify */
+    .verify-box {
+      margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);
+    }
+    .verify-status-banner {
+      display: none; margin-top: 1rem; padding: 1rem; border-radius: 10px;
+      font-size: 0.9rem; font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* SECTION B: Agent Pay-Per-Request Flow */
+    .agent-flow-grid {
+      display: grid; grid-template-columns: 1.1fr 1fr; gap: 2rem;
     }
     @media (max-width: 900px) {
-      .features-section { grid-template-columns: 1fr; }
+      .agent-flow-grid { grid-template-columns: 1fr; }
     }
-    .feat-card {
+
+    .real-log-card {
       background: #ffffff; border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 2.25rem 2rem;
-      box-shadow: var(--shadow-sm); transition: all 0.3s;
+      border-radius: var(--radius); padding: 2rem; box-shadow: var(--shadow-sm);
     }
-    .feat-card:hover {
-      transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: #cbd5e1;
-    }
-    .feat-icon-box {
-      width: 52px; height: 52px; border-radius: 14px;
-      background: var(--accent-light); display: flex;
-      align-items: center; justify-content: center;
-      font-size: 1.4rem; color: var(--accent); margin-bottom: 1.5rem;
-    }
-    .feat-card h3 { font-size: 1.25rem; font-weight: 800; margin-bottom: 0.6rem; }
-    .feat-card p { font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; }
+    .real-log-card h4 { font-size: 1.1rem; font-weight: 800; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+    .real-log-card p { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.25rem; }
 
-    /* Code Preview Section */
-    .section-wrap {
-      max-width: 1280px; margin: 0 auto 5.5rem; padding: 0 2.5rem;
+    .terminal-box {
+      background: #0f172a; border-radius: 12px; padding: 1.25rem;
+      color: #f8fafc; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem;
+      line-height: 1.6; max-height: 340px; overflow-y: auto;
     }
-    .section-header { margin-bottom: 2rem; }
-    .section-header h2 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.025em; }
-    .section-header p { font-size: 1.15rem; color: var(--text-muted); }
+    .t-http-method { color: #f43f5e; font-weight: 700; }
+    .t-http-status-402 { color: #f59e0b; font-weight: 700; }
+    .t-http-status-200 { color: #10b981; font-weight: 700; }
+    .t-header { color: #94a3b8; }
+    .t-accent { color: #38bdf8; }
 
+    .empty-agent-state {
+      padding: 3rem 1.5rem; text-align: center; color: var(--text-muted);
+      border: 1px dashed var(--border); border-radius: 12px;
+    }
+
+    /* Code Window */
     .code-window {
       background: #0f172a; border-radius: var(--radius);
-      overflow: hidden; box-shadow: 0 25px 50px rgba(15, 23, 42, 0.15);
-      border: 1px solid #1e293b;
+      overflow: hidden; box-shadow: var(--shadow-sm); border: 1px solid #1e293b;
     }
-    .code-bar {
+    .code-top {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 0.9rem 1.5rem; background: #1e293b; color: #94a3b8;
-      font-size: 0.82rem; font-family: 'JetBrains Mono', monospace;
+      padding: 0.85rem 1.25rem; background: #1e293b; color: #94a3b8;
+      font-size: 0.8rem; font-family: 'JetBrains Mono', monospace;
     }
-    .window-dots { display: flex; gap: 7px; }
-    .w-dot { width: 11px; height: 11px; border-radius: 50%; }
+    .window-dots { display: flex; gap: 6px; }
+    .w-dot { width: 10px; height: 10px; border-radius: 50%; }
     .w-dot-r { background: #ef4444; } .w-dot-y { background: #f59e0b; } .w-dot-g { background: #10b981; }
     pre {
-      padding: 1.75rem 2rem; overflow-x: auto; font-family: 'JetBrains Mono', monospace;
-      font-size: 0.88rem; line-height: 1.75; color: #e2e8f0;
+      padding: 1.5rem; overflow-x: auto; font-family: 'JetBrains Mono', monospace;
+      font-size: 0.84rem; line-height: 1.7; color: #e2e8f0;
     }
     .c-kw { color: #f43f5e; font-weight: 600; }
     .c-fn { color: #38bdf8; }
     .c-str { color: #34d399; }
     .c-cm { color: #64748b; font-style: italic; }
 
-    /* Interactive Live Playground Section */
-    .demo-playground-card {
-      background: #ffffff; border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 2.75rem;
-      box-shadow: var(--shadow-lg);
-    }
-    .wallet-connection-panel {
-      background: #f8fafc; border: 1px solid var(--border);
-      border-radius: 16px; padding: 1.25rem 1.75rem;
-      display: flex; justify-content: space-between; align-items: center;
-      flex-wrap: wrap; gap: 1.25rem; margin-bottom: 2rem;
-    }
-    .wp-col .wp-lbl { font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
-    .wp-col .wp-val { font-size: 1.05rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
-
-    .stepper { list-style: none; counter-reset: step; margin-bottom: 2.25rem; }
-    .stepper li {
-      counter-increment: step; display: flex; align-items: flex-start; gap: 1.1rem;
-      padding: 0.95rem 0; border-bottom: 1px solid #f1f5f9; font-size: 0.98rem;
-    }
-    .stepper li:last-child { border-bottom: none; }
-    .stepper li::before {
-      content: counter(step); flex-shrink: 0; width: 30px; height: 30px;
-      border-radius: 50%; background: var(--accent-light); border: 1px solid #bfdbfe;
-      color: var(--accent); font-weight: 800; font-size: 0.85rem;
-      display: flex; align-items: center; justify-content: center;
-    }
-
-    .demo-output-terminal {
-      display: none; margin-top: 1.75rem; background: #0f172a;
-      border-radius: 14px; padding: 1.5rem; color: #f8fafc;
-      font-family: 'JetBrains Mono', monospace; font-size: 0.88rem;
-    }
-
-    /* Honest Boundaries */
-    .limits-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 1.2rem; list-style: none;
-    }
-    .limits-grid li {
-      display: flex; align-items: center; gap: 0.85rem;
-      background: #ffffff; border: 1px solid var(--border);
-      border-radius: 14px; padding: 1.1rem 1.5rem; font-size: 0.95rem; color: var(--text);
-    }
-    .limit-icon {
-      width: 26px; height: 26px; border-radius: 50%;
-      background: #fef2f2; color: #ef4444; font-weight: 800;
-      display: flex; align-items: center; justify-content: center; font-size: 0.8rem;
-      flex-shrink: 0;
-    }
-
     /* Footer */
     footer {
       border-top: 1px solid var(--border); background: #ffffff;
-      padding: 4rem 2.5rem 3rem; text-align: center;
-      color: var(--text-muted); font-size: 0.92rem;
+      padding: 3.5rem 2rem 2.5rem; text-align: center;
+      color: var(--text-muted); font-size: 0.9rem;
     }
-    .footer-links { display: flex; justify-content: center; gap: 2rem; margin-bottom: 1.5rem; }
-    .footer-links a { color: var(--text-muted); text-decoration: none; font-weight: 600; }
+    .footer-links { display: flex; justify-content: center; gap: 2rem; margin-bottom: 1rem; font-weight: 600; }
+    .footer-links a { color: var(--text-muted); text-decoration: none; }
     .footer-links a:hover { color: var(--accent); }
   </style>
 </head>
@@ -458,514 +348,419 @@
       BaseReceipt
     </a>
     <div class="nav-items">
-      <a href="#blueprint"><i class="fa-solid fa-diagram-project"></i> Architecture</a>
-      <a href="#quickstart"><i class="fa-brands fa-npm"></i> TypeScript SDK</a>
-      <a href="#demo"><i class="fa-solid fa-play"></i> Live Playground</a>
+      <a href="#demo-invoice"><i class="fa-solid fa-file-invoice"></i> Create Invoice</a>
+      <a href="#agent-flow"><i class="fa-solid fa-robot"></i> Agent x402 Flow</a>
       <a href="/receipts"><i class="fa-solid fa-table-list"></i> Receipts Log</a>
+      <a href="/health"><i class="fa-solid fa-heart-pulse"></i> Health</a>
       <a href="https://github.com/technea/BaseReceipt" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i> GitHub ↗</a>
-      <button id="navConnectBtn" class="btn btn-outline" onclick="connectWallet()">
-        <i class="fa-solid fa-wallet"></i> Connect Wallet
-      </button>
-      <a class="btn btn-primary" href="#demo">Test Pay →</a>
+      <a class="btn btn-primary" href="#demo-invoice">Try Demo →</a>
     </div>
   </nav>
 
-  <!-- Hero with Live Interactive Simulation Card -->
+  <!-- Hero -->
   <section class="hero">
-    <div class="hero-left">
-      <div class="badge-pill">
-        <span class="badge-dot"></span>
-        <i class="fa-solid fa-shield-halved"></i> Native to Base Mainnet & Sepolia
-      </div>
-      <h1 class="hero-title">
-        Verify <span class="gradient">USDC Payments</span> Directly on Base.
-      </h1>
-      <p class="hero-desc">
-        The high-performance, non-custodial payment verification engine. Read on-chain Circle ERC-20 transfer logs in milliseconds without touching private keys, escrow contracts, or customer funds.
-      </p>
-      <div class="hero-actions">
-        <button class="btn btn-primary" onclick="runPipelineSimulation()">
-          <i class="fa-solid fa-play"></i> Play Interactive Demo
-        </button>
-        <a class="btn btn-outline" href="https://github.com/technea/BaseReceipt" target="_blank" rel="noopener">
-          <i class="fa-brands fa-github"></i> GitHub Repository
-        </a>
-        <a class="btn btn-outline" href="/receipts">
-          <i class="fa-solid fa-receipt"></i> Receipts Log
-        </a>
-      </div>
+    <div class="badge-pill">
+      <span class="badge-dot"></span>
+      <i class="fa-solid fa-shield-halved"></i> Non-Custodial USDC Payment Verification
+    </div>
+    <h1 class="hero-title">
+      Verify <span class="gradient">USDC Payments</span> Directly on Base.
+    </h1>
+    <p class="hero-desc">
+      An open-source verification engine for developers and AI agents. Read official on-chain Circle USDC transfer events via Base RPC. Zero custody, zero key storage.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="#demo-invoice">
+        <i class="fa-solid fa-play"></i> Live Invoice Demo
+      </a>
+      <a class="btn btn-outline" href="#agent-flow">
+        <i class="fa-solid fa-robot"></i> Agent x402 Flow
+      </a>
+      <a class="btn btn-outline" href="/receipts">
+        <i class="fa-solid fa-table-list"></i> Public Receipts Log
+      </a>
     </div>
 
-    <!-- Live Interactive Visual Pipeline Hero Card -->
-    <div class="hero-visual-card">
-      <div class="card-top">
-        <div class="card-title-group">
-          <div class="icon"><i class="fa-solid fa-network-wired"></i></div>
-          <h3>On-Chain Verification Engine</h3>
-        </div>
-        <span class="status-tag"><span class="dot"></span> Base 84532</span>
+    <!-- What BaseReceipt is and isn't Box -->
+    <div class="scope-box">
+      <div class="scope-col is">
+        <h4>What BaseReceipt is:</h4>
+        <ul>
+          <li>An open-source TypeScript SDK and verification service.</li>
+          <li>Reads public on-chain ERC-20 Transfer logs via Base RPC nodes.</li>
+          <li>Protects against duplicate payment replay attacks using a ClaimStore.</li>
+          <li>Provides native HTTP 402 challenge negotiation for autonomous agents.</li>
+        </ul>
       </div>
-
-      <div class="sim-controls-bar">
-        <span class="desc"><i class="fa-solid fa-circle-info"></i> Click to simulate live transaction verification:</span>
-        <button class="btn-play-sim" onclick="runPipelineSimulation()">
-          <i class="fa-solid fa-play"></i> Run Simulation
-        </button>
-      </div>
-
-      <!-- Animated Pipeline Stages -->
-      <div class="anim-pipeline">
-        <div class="pipeline-stage active" id="pipeStage1">
-          <div class="stage-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
-          <div class="stage-body">
-            <div class="st-lbl">1. Invoice Generated</div>
-            <div class="st-val" id="pipeVal1">0.10 USDC · Memo: Demo Access</div>
-          </div>
-          <span class="stage-badge" id="pipeBadge1">Ready</span>
-        </div>
-
-        <div class="pipeline-stage" id="pipeStage2">
-          <div class="stage-icon"><i class="fa-solid fa-bolt"></i></div>
-          <div class="stage-body">
-            <div class="st-lbl">2. Circle USDC Contract Read</div>
-            <div class="st-val" id="pipeVal2">Transfer(0xPayer, 0xRecipient, 100000)</div>
-          </div>
-          <span class="stage-badge" id="pipeBadge2">Waiting</span>
-        </div>
-
-        <div class="pipeline-stage" id="pipeStage3">
-          <div class="stage-icon"><i class="fa-solid fa-shield-halved"></i></div>
-          <div class="stage-body">
-            <div class="st-lbl">3. Anti-Replay Claim Check</div>
-            <div class="st-val" id="pipeVal3">ClaimStore: Verify Unused Tx Hash</div>
-          </div>
-          <span class="stage-badge" id="pipeBadge3">Waiting</span>
-        </div>
-      </div>
-
-      <!-- Live Terminal Output -->
-      <div class="live-terminal">
-        <div class="terminal-row">
-          <span class="t-dim">Status:</span>
-          <span class="t-green" id="termStatus">✓ READY TO VERIFY</span>
-        </div>
-        <div class="terminal-row">
-          <span class="t-dim">Token Contract:</span>
-          <span class="t-blue">0x036CbD...dCF7e (Official Circle USDC)</span>
-        </div>
-        <div class="terminal-row">
-          <span class="t-dim">Verification Engine:</span>
-          <span class="t-blue" id="termTime">Base RPC · 0 ms elapsed</span>
-        </div>
-        <div class="terminal-row">
-          <span class="t-dim">Custody Risk:</span>
-          <span class="t-green">0.00% (Strictly Non-Custodial)</span>
-        </div>
+      <div class="scope-col isnt">
+        <h4>What BaseReceipt is NOT:</h4>
+        <ul>
+          <li>Not a custodian: never touches, routes, holds, or pools your funds.</li>
+          <li>Not a wallet: never requests or stores private keys or seed phrases.</li>
+          <li>Not audited: open-source software provided as-is under the MIT license.</li>
+          <li>Not a custom smart contract: reads official Circle USDC transfers only.</li>
+        </ul>
       </div>
     </div>
   </section>
 
-  <!-- Visual Architecture Blueprint (Clear visual representation) -->
-  <section class="blueprint-section" id="blueprint">
-    <div class="blueprint-card">
-      <div class="blueprint-title-area">
-        <div class="blueprint-pill"><i class="fa-solid fa-cubes"></i> Architecture Blueprint</div>
-        <h2 class="blueprint-heading">How BaseReceipt Verifies Without Custody</h2>
+  <!-- SECTION A: Live Invoice Demo -->
+  <section class="section-wrap" id="demo-invoice">
+    <div class="section-tag">Interactive Demo</div>
+    <h2 class="section-heading">Live Invoice Creation & Verification</h2>
+    <p class="section-sub">Create an invoice, scan or copy the payment details, and check the transaction status directly on Base.</p>
+
+    <div class="demo-invoice-card">
+      <div class="demo-notice">
+        <i class="fa-solid fa-circle-info"></i>
+        <span><strong>Non-custodial demo:</strong> Payments go directly to the recipient address you specify. BaseReceipt never holds or escrows funds.</span>
       </div>
 
-      <div class="flow-connector-track">
-        <div class="step-box selected" id="blueprintStep1" onclick="selectBlueprintStep(1)">
-          <div class="step-number-badge">1</div>
-          <div class="step-icon-wrap"><i class="fa-solid fa-file-invoice"></i></div>
-          <h4>Invoice Created</h4>
-          <p>Merchant or x402 AI Agent calls <code>createInvoice()</code> specifying amount, recipient address, and expiry.</p>
-        </div>
-
-        <div class="step-box" id="blueprintStep2" onclick="selectBlueprintStep(2)">
-          <div class="step-number-badge">2</div>
-          <div class="step-icon-wrap"><i class="fa-solid fa-wallet"></i></div>
-          <h4>P2P Transfer</h4>
-          <p>Payer transfers USDC directly from their self-custody wallet to the merchant's address on Base.</p>
-        </div>
-
-        <div class="step-box" id="blueprintStep3" onclick="selectBlueprintStep(3)">
-          <div class="step-number-badge">3</div>
-          <div class="step-icon-wrap"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
-          <h4>Base RPC Query</h4>
-          <p>BaseReceipt queries the transaction receipt and filters official Circle Transfer topics via read-only Base RPC.</p>
-        </div>
-
-        <div class="step-box" id="blueprintStep4" onclick="selectBlueprintStep(4)">
-          <div class="step-number-badge">4</div>
-          <div class="step-icon-wrap"><i class="fa-solid fa-circle-check"></i></div>
-          <h4>Claim & Webhook</h4>
-          <p>Prevents replay attacks via ClaimStore, returns confirmation receipt, and triggers HMAC-SHA256 webhooks.</p>
-        </div>
-      </div>
-
-      <!-- Detail Explainer Panel -->
-      <div class="flow-detail-panel" id="blueprintExplainer">
-        <div class="flow-detail-left">
-          <div class="icon-circle" id="explainerIcon"><i class="fa-solid fa-file-invoice"></i></div>
-          <div>
-            <h5 id="explainerTitle">Step 1: Cryptographic Invoicing</h5>
-            <p id="explainerDesc">Invoices are created with precise atomic units (6 decimals for USDC) and an immutable expiration timestamp.</p>
-          </div>
-        </div>
-        <button class="btn btn-outline" style="background:#fff;border-color:#93c5fd;" onclick="runPipelineSimulation()">
-          <i class="fa-solid fa-play"></i> Watch in Action
-        </button>
-      </div>
-    </div>
-  </section>
-
-  <!-- 3-Column Features -->
-  <section class="features-section">
-    <div class="feat-card">
-      <div class="feat-icon-box"><i class="fa-solid fa-lock"></i></div>
-      <h3>True Non-Custodial</h3>
-      <p>BaseReceipt never touches, routes, or pools user funds. We never ask for or store private keys, completely eliminating custodial liability.</p>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon-box"><i class="fa-solid fa-coins"></i></div>
-      <h3>Official Circle Contracts</h3>
-      <p>Hardcoded on-chain validation against Circle's verified USDC contract on Base Mainnet (<code>0x8335...</code>) and Sepolia (<code>0x036C...</code>).</p>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon-box"><i class="fa-solid fa-robot"></i></div>
-      <h3>x402 & Agent Ready</h3>
-      <p>Native HTTP 402 challenge negotiation and machine-readable Bazaar catalog (<code>/.well-known/x402-bazaar.json</code>) for AI agents.</p>
-    </div>
-  </section>
-
-  <!-- SDK Code Preview -->
-  <section class="section-wrap" id="quickstart">
-    <div class="section-header">
-      <h2>Verify in 10 lines of TypeScript</h2>
-      <p>Integrate the lightweight, zero-dependency SDK into any Node.js, Express, or Next.js app.</p>
-    </div>
-
-    <div class="code-window">
-      <div class="code-bar">
-        <div class="window-dots"><span class="w-dot w-dot-r"></span><span class="w-dot w-dot-y"></span><span class="w-dot w-dot-g"></span></div>
-        <span>verification-demo.ts</span>
-        <span>Base Sepolia & Mainnet</span>
-      </div>
-      <pre><span class="c-kw">import</span> { createInvoice, verifyPayment, MemoryClaimStore } <span class="c-kw">from</span> <span class="c-str">"basereceipt"</span>;
-
-<span class="c-cm">// 1. Generate an invoice for 0.10 USDC on Base Sepolia</span>
-<span class="c-kw">const</span> invoice = <span class="c-fn">createInvoice</span>({
-  recipient: <span class="c-str">"0xYourWalletAddress..."</span>,
-  amountUsdc: <span class="c-str">"0.10"</span>,
-  network: <span class="c-str">"base-sepolia"</span>, <span class="c-cm">// or "base-mainnet"</span>
-});
-
-<span class="c-cm">// 2. Verify incoming transaction hash directly on Base RPC</span>
-<span class="c-kw">const</span> claimStore = <span class="c-kw">new</span> <span class="c-fn">MemoryClaimStore</span>(); <span class="c-cm">// or SupabaseClaimStore in prod</span>
-<span class="c-kw">const</span> result = <span class="c-kw">await</span> <span class="c-fn">verifyPayment</span>(invoice, <span class="c-str">"0xTxHash..."</span>, { claimStore });
-
-<span class="c-cm">// 3. Grant access upon verified on-chain confirmation</span>
-<span class="c-kw">if</span> (result.status === <span class="c-str">"confirmed"</span> || result.status === <span class="c-str">"overpaid"</span>) {
-  console.<span class="c-fn">log</span>(<span class="c-str">"✓ Verified on Base!"</span>, result.paidAtomic);
-}</pre>
-    </div>
-  </section>
-
-  <!-- Interactive Demo with Coinbase/Base Wallet -->
-  <section class="section-wrap" id="demo">
-    <div class="section-header">
-      <h2>Interactive Live Playground</h2>
-      <p>Connect your Coinbase Wallet or Base Smart Wallet, send 0.10 test USDC, and verify in real time.</p>
-    </div>
-
-    <div class="demo-playground-card">
-      <div class="wallet-connection-panel">
-        <div class="wp-col">
-          <div class="wp-lbl">Connected Wallet</div>
-          <div id="walletAddressDisplay" class="wp-val">Not connected</div>
-        </div>
-        <div class="wp-col">
-          <div class="wp-lbl">Target Network</div>
-          <div class="wp-val" style="color:var(--accent);"><i class="fa-solid fa-cube"></i> Base Sepolia (84532)</div>
-        </div>
+      <div class="invoice-form-grid">
+        <!-- Form Left -->
         <div>
-          <button id="mainConnectBtn" class="btn btn-primary" onclick="connectWallet()">
-            <i class="fa-solid fa-wallet"></i> Connect Base Wallet
+          <!-- Network Toggle -->
+          <div class="net-toggle-box">
+            <button type="button" class="net-btn active" id="btnNetSepolia" onclick="setDemoNetwork('base-sepolia')">
+              Base Sepolia (Testnet)
+            </button>
+            <button type="button" class="net-btn" id="btnNetMainnet" onclick="setDemoNetwork('base-mainnet')">
+              Base Mainnet (Real)
+            </button>
+          </div>
+
+          <div class="mainnet-warning" id="mainnetWarning">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <strong>Real funds:</strong> Funds go directly to the recipient address you entered. BaseReceipt never holds them.
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Recipient Wallet Address</label>
+            <input type="text" class="form-input" id="inpRecipient" placeholder="0x..." value="0x20f9A3B5749f99e3128ffE3Fea0F36a57c5E4745" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">USDC Amount (Max 2 decimals, max 1,000)</label>
+            <input type="number" step="0.01" max="1000" min="0.01" class="form-input" id="inpAmount" value="0.10" />
+            <div class="amount-presets">
+              <button type="button" class="preset-btn" onclick="setPreset('0.10')">0.10 USDC</button>
+              <button type="button" class="preset-btn" onclick="setPreset('1.00')">1.00 USDC</button>
+              <button type="button" class="preset-btn" onclick="setPreset('5.00')">5.00 USDC</button>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:1rem;" onclick="generateInvoice()">
+            <i class="fa-solid fa-receipt"></i> Create Invoice
           </button>
         </div>
-      </div>
 
-      <ol class="stepper">
-        <li><strong>Connect:</strong> Click above to connect Coinbase Wallet or Base Smart Wallet.</li>
-        <li><strong>Authorize:</strong> Click <strong>"Pay 0.10 USDC with Base Wallet"</strong> to trigger the transfer on Base Sepolia.</li>
-        <li><strong>Verify:</strong> BaseReceipt immediately polls on-chain, confirms against Circle's USDC contract, and logs the receipt.</li>
-      </ol>
+        <!-- Result Right -->
+        <div>
+          <div class="invoice-result-pane" id="invoiceResultPane">
+            <div class="qr-center">
+              <canvas id="qrcodeCanvas"></canvas>
+              <div class="qr-caption"><i class="fa-solid fa-circle-question"></i> QR support varies by wallet; if scanning fails, copy the details manually.</div>
+            </div>
 
-      <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center;">
-        <button id="payDemoBtn" class="btn btn-primary" onclick="payWithWallet()" disabled>
-          <i class="fa-solid fa-bolt"></i> Pay 0.10 USDC with Base Wallet
-        </button>
-        <a class="btn btn-outline" href="/api/demo/quote" target="_blank" rel="noopener">
-          <i class="fa-solid fa-code"></i> Raw x402 402 Endpoint ↗
-        </a>
-      </div>
+            <div class="copy-row">
+              <span class="copy-lbl">Invoice ID:</span>
+              <span class="copy-val" id="resInvId">—</span>
+              <button class="btn-copy" onclick="copyText('resInvId')"><i class="fa-regular fa-copy"></i></button>
+            </div>
 
-      <div id="demoStatusArea" class="demo-output-terminal">
-        <div id="demoStatusText" style="color:#38bdf8;">Awaiting payment...</div>
-        <div id="demoTxHash" style="margin-top:0.4rem;word-break:break-all;color:#94a3b8;"></div>
+            <div class="copy-row">
+              <span class="copy-lbl">Recipient:</span>
+              <span class="copy-val" id="resRecipient">—</span>
+              <button class="btn-copy" onclick="copyText('resRecipient')"><i class="fa-regular fa-copy"></i></button>
+            </div>
+
+            <div class="copy-row">
+              <span class="copy-lbl">Required:</span>
+              <span class="copy-val" id="resAmount">—</span>
+              <button class="btn-copy" onclick="copyText('resAmount')"><i class="fa-regular fa-copy"></i></button>
+            </div>
+
+            <div class="copy-row">
+              <span class="copy-lbl">USDC Token:</span>
+              <span class="copy-val" id="resToken">—</span>
+              <button class="btn-copy" onclick="copyText('resToken')"><i class="fa-regular fa-copy"></i></button>
+            </div>
+
+            <div class="copy-row">
+              <span class="copy-lbl">Expires:</span>
+              <span class="copy-val" id="resExpiry">—</span>
+            </div>
+
+            <!-- Verify Section -->
+            <div class="verify-box">
+              <label class="form-label">Paste Your Transaction Hash to Verify</label>
+              <div style="display:flex;gap:0.5rem;">
+                <input type="text" class="form-input" id="inpTxHash" placeholder="0x..." />
+                <button class="btn btn-primary" onclick="verifyInvoicePayment()">Verify</button>
+              </div>
+              <div class="verify-status-banner" id="verifyStatusBanner"></div>
+            </div>
+          </div>
+
+          <div id="invoiceEmptyState" style="text-align:center;padding:3rem 1.5rem;color:var(--text-muted);border:1px dashed var(--border);border-radius:14px;">
+            <i class="fa-solid fa-file-invoice" style="font-size:2rem;margin-bottom:0.75rem;color:var(--text-dim);"></i>
+            <p>Fill the form and click <strong>Create Invoice</strong> to view payment details and QR code.</p>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- Honest Boundaries -->
-  <section class="section-wrap">
-    <div class="section-header">
-      <h2>Engineering Transparency</h2>
-      <p>Explicit project boundaries for security and audit clarity.</p>
-    </div>
+  <!-- SECTION B: Agent Pay-Per-Request Flow -->
+  <section class="section-wrap" id="agent-flow">
+    <div class="section-tag">Agentic x402 Protocol</div>
+    <h2 class="section-heading">Agent Pay-Per-Request Flow</h2>
+    <p class="section-sub">Standard HTTP 402 challenge-response flow for autonomous scripts and AI agents.</p>
 
-    <ul class="limits-grid">
-      <li><span class="limit-icon"><i class="fa-solid fa-xmark"></i></span> Does not hold or pool funds (100% peer-to-peer)</li>
-      <li><span class="limit-icon"><i class="fa-solid fa-xmark"></i></span> Does not request or store wallet private keys</li>
-      <li><span class="limit-icon"><i class="fa-solid fa-xmark"></i></span> Has not been third-party audited (MIT License)</li>
-      <li><span class="limit-icon"><i class="fa-solid fa-xmark"></i></span> Does not deploy custom smart contracts</li>
-      <li><span class="limit-icon"><i class="fa-solid fa-xmark"></i></span> Does not fabricate mock receipts</li>
-      <li><span class="limit-icon"><i class="fa-solid fa-xmark"></i></span> Does not support non-Base networks</li>
-    </ul>
+    <div class="agent-flow-grid">
+      <!-- Real Log Card -->
+      <div class="real-log-card">
+        <h4><i class="fa-solid fa-terminal"></i> Real Recorded Agent Run</h4>
+        <p>Real request and response record against <code>GET /api/demo/quote</code> on Base Sepolia:</p>
+
+        <div id="agentLogContent">
+          <div class="empty-agent-state" id="agentEmptyState">
+            <i class="fa-solid fa-clock-rotate-left" style="font-size:1.75rem;margin-bottom:0.5rem;color:var(--text-dim);"></i>
+            <p><strong>No agent run recorded yet.</strong></p>
+            <p style="font-size:0.8rem;margin-top:0.25rem;">Run the example agent script below to record a live transaction.</p>
+          </div>
+
+          <div class="terminal-box" id="agentLogTerminal" style="display:none;">
+            <div style="color:#94a3b8;margin-bottom:0.5rem;">// 1. Initial Request (Unpaid)</div>
+            <div><span class="t-http-method">GET</span> /api/demo/quote HTTP/1.1</div>
+            <div><span class="t-http-status-402">HTTP/1.1 402 Payment Required</span></div>
+            <div><span class="t-header">WWW-Authenticate:</span> x402 scheme="exact", asset="0x036C...dCF7e", amount="100000"</div>
+            <br />
+            <div style="color:#94a3b8;margin-bottom:0.5rem;">// 2. On-Chain Payment Broadcast</div>
+            <div><span class="t-header">Tx Hash:</span> <a id="agentLogTxLink" href="#" target="_blank" rel="noopener" style="color:#38bdf8;text-decoration:underline;">0x...</a></div>
+            <div><span class="t-header">Amount Paid:</span> <span id="agentLogAmount" class="t-accent">0.10 USDC</span></div>
+            <br />
+            <div style="color:#94a3b8;margin-bottom:0.5rem;">// 3. Paid Request with Claim Proof</div>
+            <div><span class="t-http-method">GET</span> /api/demo/quote?invoiceId=...&txHash=0x...</div>
+            <div><span class="t-http-status-200">HTTP/1.1 200 OK</span></div>
+            <div style="color:#34d399;">{ "success": true, "message": "Payment verified. Welcome to BaseReceipt!" }</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Runnable Script Window -->
+      <div class="code-window">
+        <div class="code-bar">
+          <div class="window-dots"><span class="w-dot w-dot-r"></span><span class="w-dot w-dot-y"></span><span class="w-dot w-dot-g"></span></div>
+          <span>examples/agent.ts (viem + TypeScript)</span>
+          <span>Base Sepolia</span>
+        </div>
+        <pre><span class="c-cm">// Autonomous agent payment flow using viem on Base Sepolia</span>
+<span class="c-kw">import</span> { createWalletClient, http, parseAbi } <span class="c-kw">from</span> <span class="c-str">"viem"</span>;
+<span class="c-kw">import</span> { privateKeyToAccount } <span class="c-kw">from</span> <span class="c-str">"viem/accounts"</span>;
+<span class="c-kw">import</span> { baseSepolia } <span class="c-kw">from</span> <span class="c-str">"viem/chains"</span>;
+
+<span class="c-kw">const</span> account = <span class="c-fn">privateKeyToAccount</span>(process.env.TEST_WALLET_PRIVATE_KEY);
+<span class="c-kw">const</span> client = <span class="c-fn">createWalletClient</span>({ account, chain: baseSepolia, transport: <span class="c-fn">http</span>() });
+
+<span class="c-cm">// 1. Request endpoint → Receive 402</span>
+<span class="c-kw">const</span> res402 = <span class="c-kw">await</span> <span class="c-fn">fetch</span>(<span class="c-str">"http://localhost:8080/api/demo/quote"</span>);
+<span class="c-kw">const</span> challenge = <span class="c-kw">await</span> res402.<span class="c-fn">json</span>();
+
+<span class="c-cm">// 2. Pay USDC on Base Sepolia</span>
+<span class="c-kw">const</span> txHash = <span class="c-kw">await</span> client.<span class="c-fn">writeContract</span>({
+  address: <span class="c-str">"0x036CbD53842c5426634e7929541eC2318f3dCF7e"</span>,
+  abi: <span class="c-fn">parseAbi</span>([<span class="c-str">"function transfer(address to, uint256 amount) returns (bool)"</span>]),
+  functionName: <span class="c-str">"transfer"</span>,
+  args: [challenge.payment.recipient, BigInt(challenge.payment.amountAtomic)],
+});
+
+<span class="c-cm">// 3. Retry with proof → 200 OK</span>
+<span class="c-kw">const</span> res200 = <span class="c-kw">await</span> <span class="c-fn">fetch</span>(
+  <span class="c-str">`http://localhost:8080/api/demo/quote?invoiceId=${challenge.invoiceId}&txHash=${txHash}`</span>
+);
+console.<span class="c-fn">log</span>(<span class="c-str">"Result:"</span>, <span class="c-kw">await</span> res200.<span class="c-fn">json</span>());</pre>
+      </div>
+    </div>
   </section>
 
   <!-- Footer -->
   <footer>
     <div class="footer-links">
-      <a href="https://github.com/technea/BaseReceipt" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i> GitHub Repo</a>
-      <a href="/receipts"><i class="fa-solid fa-table-list"></i> Receipts Explorer</a>
-      <a href="/health"><i class="fa-solid fa-heart-pulse"></i> Health API</a>
-      <a href="/metrics"><i class="fa-solid fa-chart-simple"></i> Prometheus Metrics</a>
-      <a href="/.well-known/x402-bazaar.json"><i class="fa-solid fa-network-wired"></i> x402 Bazaar Catalog</a>
+      <a href="https://github.com/technea/BaseReceipt" target="_blank" rel="noopener">GitHub</a>
+      <a href="/receipts">Receipts Log</a>
+      <a href="/health">Health API</a>
+      <a href="/metrics">Prometheus Metrics</a>
+      <a href="/.well-known/x402-bazaar.json">x402 Bazaar Catalog</a>
     </div>
-    <p>BaseReceipt · Open-Source & Non-Custodial USDC Verification on <strong>Base</strong></p>
+    <p>BaseReceipt · Non-Custodial USDC Payment Verification on <strong>Base</strong> · MIT License</p>
   </footer>
 </div>
 
 <script>
-  // ── 1. Interactive Pipeline Simulation (Triggered by Play Button)
-  let isSimulating = false;
+  let currentDemoNetwork = 'base-sepolia';
+  let activeInvoice = null;
 
-  async function runPipelineSimulation() {
-    if (isSimulating) return;
-    isSimulating = true;
-
-    const stage1 = document.getElementById('pipeStage1');
-    const stage2 = document.getElementById('pipeStage2');
-    const stage3 = document.getElementById('pipeStage3');
-
-    const badge1 = document.getElementById('pipeBadge1');
-    const badge2 = document.getElementById('pipeBadge2');
-    const badge3 = document.getElementById('pipeBadge3');
-
-    const termStatus = document.getElementById('termStatus');
-    const termTime = document.getElementById('termTime');
-
-    // Reset
-    stage1.className = 'pipeline-stage active';
-    stage2.className = 'pipeline-stage';
-    stage3.className = 'pipeline-stage';
-    badge1.innerText = 'Creating...';
-    badge2.innerText = 'Waiting';
-    badge3.innerText = 'Waiting';
-    termStatus.innerText = 'SIMULATING TRANSACTION...';
-    termStatus.className = 't-blue';
-
-    // Step 1: Create Invoice
-    await new Promise(r => setTimeout(r, 600));
-    badge1.innerText = '✓ Generated';
-    badge1.style.background = '#dbeafe';
-
-    // Step 2: On-chain transfer
-    stage2.className = 'pipeline-stage active';
-    badge2.innerText = 'Inspecting logs...';
-    termTime.innerText = 'Base RPC · Scanning block for Transfer topic...';
-    await new Promise(r => setTimeout(r, 900));
-
-    badge2.innerText = '✓ Topic Matched';
-    badge2.style.background = '#dbeafe';
-
-    // Step 3: Replay prevention
-    stage3.className = 'pipeline-stage active';
-    badge3.innerText = 'Deduplicating...';
-    await new Promise(r => setTimeout(r, 700));
-
-    badge3.innerText = '✓ Claim Recorded';
-    badge3.style.background = '#d1fae5';
-
-    // Terminal result
-    termStatus.innerText = '✓ PAYMENT CONFIRMED (0.10 USDC)';
-    termStatus.className = 't-green';
-    termTime.innerText = 'Base RPC latency · 34ms on Base Sepolia';
-
-    isSimulating = false;
-  }
-
-  // ── 2. Interactive Architecture Blueprint Stepper
-  const stepExplanations = {
-    1: {
-      title: "Step 1: Cryptographic Invoicing",
-      desc: "Invoices are created with precise atomic units (6 decimals for USDC), recipient wallet address, and an immutable expiry timestamp.",
-      icon: "fa-solid fa-file-invoice"
-    },
-    2: {
-      title: "Step 2: Direct Peer-to-Peer Transfer",
-      desc: "The payer (user or autonomous AI agent) broadcasts a standard ERC-20 transfer directly to the merchant wallet on Base without intermediaries.",
-      icon: "fa-solid fa-wallet"
-    },
-    3: {
-      title: "Step 3: Base On-Chain Verification",
-      desc: "BaseReceipt queries native Base nodes, verifies receipt status=1 (success), and validates Transfer(from, to, amount) from Circle's official contract.",
-      icon: "fa-solid fa-magnifying-glass-chart"
-    },
-    4: {
-      title: "Step 4: Replay Prevention & Webhook",
-      desc: "The transaction hash is logged into the ClaimStore to prevent double-spending, and a cryptographically signed HMAC-SHA256 webhook fires.",
-      icon: "fa-solid fa-circle-check"
-    }
+  const USDC_CONTRACTS = {
+    'base-sepolia': '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+    'base-mainnet': '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
   };
 
-  function selectBlueprintStep(stepNum) {
-    for (let i = 1; i <= 4; i++) {
-      document.getElementById('blueprintStep' + i).className = (i === stepNum) ? 'step-box selected' : 'step-box';
-    }
-    const data = stepExplanations[stepNum];
-    document.getElementById('explainerTitle').innerText = data.title;
-    document.getElementById('explainerDesc').innerText = data.desc;
-    document.getElementById('explainerIcon').innerHTML = `<i class="${data.icon}"></i>`;
+  const CHAIN_IDS = {
+    'base-sepolia': 84532,
+    'base-mainnet': 8453
+  };
+
+  function setDemoNetwork(net) {
+    currentDemoNetwork = net;
+    document.getElementById('btnNetSepolia').className = (net === 'base-sepolia') ? 'net-btn active' : 'net-btn';
+    document.getElementById('btnNetMainnet').className = (net === 'base-mainnet') ? 'net-btn active' : 'net-btn';
+    document.getElementById('mainnetWarning').style.display = (net === 'base-mainnet') ? 'block' : 'none';
   }
 
-  // ── 3. Base / Coinbase Wallet SDK Integration
-  let userAccount = null;
-  let coinbaseProvider = null;
-
-  function getProvider() {
-    if (coinbaseProvider) return coinbaseProvider;
-    if (window.CoinbaseWalletSDK) {
-      const sdk = new window.CoinbaseWalletSDK({
-        appName: 'BaseReceipt',
-        appLogoUrl: 'https://base.org/document/favicon.ico',
-        appChainIds: [84532, 8453]
-      });
-      coinbaseProvider = sdk.makeWeb3Provider();
-      return coinbaseProvider;
-    }
-    return window.ethereum;
+  function setPreset(amt) {
+    document.getElementById('inpAmount').value = amt;
   }
 
-  async function connectWallet() {
-    const provider = getProvider();
-    if (!provider) {
-      alert("No Ethereum/Base wallet detected. Please install Coinbase Wallet.");
+  function isValidAddress(address) {
+    return /^0x[0-9a-fA-F]{40}$/.test(address);
+  }
+
+  async function generateInvoice() {
+    const recipient = document.getElementById('inpRecipient').value.trim();
+    const amount = document.getElementById('inpAmount').value.trim();
+
+    if (!isValidAddress(recipient)) {
+      alert("Please enter a valid 20-byte Ethereum address (0x...)");
       return;
     }
-    try {
-      const accounts = await provider.request({ method: 'eth_requestAccounts' });
-      if (accounts && accounts.length > 0) {
-        userAccount = accounts[0];
-        const short = userAccount.slice(0, 6) + '...' + userAccount.slice(-4);
-        document.getElementById('walletAddressDisplay').innerText = short + ' (' + userAccount + ')';
-        document.getElementById('navConnectBtn').innerHTML = `<i class="fa-solid fa-wallet"></i> ${short}`;
-        document.getElementById('mainConnectBtn').innerHTML = `<i class="fa-solid fa-circle-check"></i> Connected`;
-        document.getElementById('mainConnectBtn').disabled = true;
-        document.getElementById('payDemoBtn').disabled = false;
 
-        // Switch to Base Sepolia (0x14a34 = 84532)
-        try {
-          await provider.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0x14a34' }]
-          });
-        } catch (switchError) {
-          if (switchError.code === 4902) {
-            await provider.request({
-              method: 'wallet_addEthereumChain',
-              params: [{
-                chainId: '0x14a34',
-                chainName: 'Base Sepolia',
-                nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-                rpcUrls: ['https://sepolia.base.org'],
-                blockExplorerUrls: ['https://sepolia.basescan.org']
-              }]
-            });
-          }
-        }
-      }
-    } catch (err) {
-      alert('Wallet connection failed: ' + err.message);
-    }
-  }
-
-  async function payWithWallet() {
-    if (!userAccount) {
-      await connectWallet();
-      if (!userAccount) return;
+    const num = Number(amount);
+    if (isNaN(num) || num <= 0 || num > 1000) {
+      alert("Please enter an amount between 0.01 and 1,000 USDC.");
+      return;
     }
 
-    const statusArea = document.getElementById('demoStatusArea');
-    const statusText = document.getElementById('demoStatusText');
-    const txHashEl = document.getElementById('demoTxHash');
-    statusArea.style.display = 'block';
-    statusText.innerText = 'Creating invoice on BaseReceipt...';
-    txHashEl.innerText = '';
-
     try {
-      const res = await fetch('/api/demo/quote');
-      const invoiceData = await res.json();
-      const invoiceId = invoiceData.invoiceId || invoiceData.id;
-      const recipient = invoiceData.payment?.recipient || invoiceData.recipient;
-      const usdcContract = '0x036CbD53842c5426634e7929541eC2318f3dCF7e'; // Base Sepolia USDC
-
-      statusText.innerText = 'Prompting payment in Coinbase/Base wallet for 0.10 USDC...';
-
-      const cleanTo = recipient.toLowerCase().replace('0x', '').padStart(64, '0');
-      const cleanAmount = (100000).toString(16).padStart(64, '0');
-      const data = '0xa9059cbb' + cleanTo + cleanAmount;
-
-      const provider = getProvider();
-      const txHash = await provider.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          from: userAccount,
-          to: usdcContract,
-          data: data,
-          value: '0x0'
-        }]
+      const res = await fetch('/api/invoices', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          recipient,
+          amountUsdc: num.toFixed(2),
+          network: currentDemoNetwork,
+          memo: 'BaseReceipt live demo'
+        })
       });
 
-      statusText.innerHTML = '<span style="color:#10b981">✓ Transaction broadcast!</span> Verifying on Base blockchain via BaseReceipt...';
-      txHashEl.innerHTML = 'Tx: <a href="https://sepolia.basescan.org/tx/' + txHash + '" target="_blank" rel="noopener" style="color:#38bdf8;">' + txHash + '</a>';
-
-      let verified = false;
-      for (let i = 0; i < 15; i++) {
-        await new Promise(r => setTimeout(r, 3000));
-        try {
-          const checkRes = await fetch('/api/check-payment', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ invoiceId, txHash })
-          });
-          const checkData = await checkRes.json();
-          if (checkData.status === 'confirmed' || checkData.status === 'overpaid') {
-            statusText.innerHTML = '<span style="color:#10b981;font-weight:700;">✓ PAYMENT VERIFIED ON-CHAIN!</span> Status: ' + checkData.status;
-            verified = true;
-            break;
-          }
-        } catch (e) {}
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to create invoice');
       }
 
-      if (!verified) {
-        statusText.innerText = 'Tx broadcast. Waiting for Base block confirmation. Check /receipts in a moment.';
-      }
+      activeInvoice = await res.json();
+
+      document.getElementById('invoiceEmptyState').style.display = 'none';
+      document.getElementById('invoiceResultPane').className = 'invoice-result-pane visible';
+
+      document.getElementById('resInvId').innerText = activeInvoice.id;
+      document.getElementById('resRecipient').innerText = activeInvoice.recipient;
+      document.getElementById('resAmount').innerText = activeInvoice.amountUsdc + ' USDC';
+      const token = USDC_CONTRACTS[currentDemoNetwork];
+      document.getElementById('resToken').innerText = token;
+      document.getElementById('resExpiry').innerText = new Date(activeInvoice.expiresAt).toLocaleTimeString();
+
+      // Render EIP-681 standard URI in QR Code:
+      // ethereum:<tokenAddress>@<chainId>/transfer?address=<recipient>&uint256=<atomicAmount>
+      const chainId = CHAIN_IDS[currentDemoNetwork];
+      const eip681Uri = `ethereum:${token}@${chainId}/transfer?address=${activeInvoice.recipient}&uint256=${activeInvoice.amountAtomic}`;
+      
+      const canvas = document.getElementById('qrcodeCanvas');
+      QRCode.toCanvas(canvas, eip681Uri, { width: 170, margin: 1 }, function(error) {
+        if (error) console.error(error);
+      });
+
     } catch (err) {
-      statusText.innerHTML = '<span style="color:#ef4444">Error: ' + err.message + '</span>';
+      alert("Invoice error: " + err.message);
     }
   }
+
+  async function verifyInvoicePayment() {
+    if (!activeInvoice) {
+      alert("Please create an invoice first.");
+      return;
+    }
+
+    const txHash = document.getElementById('inpTxHash').value.trim();
+    if (!/^0x[0-9a-fA-F]{64}$/.test(txHash)) {
+      alert("Please enter a valid 32-byte transaction hash (0x... 64 hex characters)");
+      return;
+    }
+
+    const banner = document.getElementById('verifyStatusBanner');
+    banner.style.display = 'block';
+    banner.style.background = '#f1f5f9';
+    banner.style.color = '#0f172a';
+    banner.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying payment on Base RPC...';
+
+    try {
+      const res = await fetch('/api/check-payment', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          invoiceId: activeInvoice.id,
+          txHash
+        })
+      });
+
+      const data = await res.json();
+      const scanBase = (currentDemoNetwork === 'base-mainnet') ? 'https://basescan.org' : 'https://sepolia.basescan.org';
+
+      if (data.status === 'confirmed' || data.status === 'overpaid') {
+        banner.style.background = '#ecfdf5';
+        banner.style.color = '#065f46';
+        banner.innerHTML = `<strong>✓ Payment ${data.status.toUpperCase()}!</strong><br />Verified: ${data.paidUsdc} USDC on Base.<br /><a href="${scanBase}/tx/${txHash}" target="_blank" rel="noopener" style="color:#0052ff;text-decoration:underline;">View on Basescan ↗</a>`;
+      } else {
+        banner.style.background = '#fffbeb';
+        banner.style.color = '#92400e';
+        banner.innerHTML = `<strong>Status: ${data.status}</strong><br />Required ${data.requiredUsdc} USDC, found ${data.paidUsdc || '0.00'} USDC.<br /><a href="${scanBase}/tx/${txHash}" target="_blank" rel="noopener" style="color:#0052ff;text-decoration:underline;">Check on Basescan ↗</a>`;
+      }
+    } catch (err) {
+      banner.style.background = '#fef2f2';
+      banner.style.color = '#991b1b';
+      banner.innerHTML = `Verification error: ${err.message}`;
+    }
+  }
+
+  function copyText(elemId) {
+    const text = document.getElementById(elemId).innerText;
+    navigator.clipboard.writeText(text);
+    alert("Copied to clipboard!");
+  }
+
+  // Fetch last recorded real agent run
+  async function loadLastAgentRun() {
+    try {
+      const res = await fetch('/api/demo/last-run');
+      const data = await res.json();
+      if (data.run) {
+        document.getElementById('agentEmptyState').style.display = 'none';
+        document.getElementById('agentLogTerminal').style.display = 'block';
+        document.getElementById('agentLogAmount').innerText = data.run.paidUsdc + ' USDC';
+        const scanBase = data.run.network === 'base-mainnet' ? 'https://basescan.org' : 'https://sepolia.basescan.org';
+        const link = document.getElementById('agentLogTxLink');
+        link.innerText = data.run.txHash.slice(0, 10) + '...' + data.run.txHash.slice(-8);
+        link.href = `${scanBase}/tx/${data.run.txHash}`;
+      } else {
+        document.getElementById('agentEmptyState').style.display = 'block';
+        document.getElementById('agentLogTerminal').style.display = 'none';
+      }
+    } catch (e) {
+      console.log('No last run info available.');
+    }
+  }
+
+  loadLastAgentRun();
 </script>
 
 </body>
