@@ -9,8 +9,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  <!-- QR Code generation library -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <!-- QR Code generation library (qrcodejs - browser-native) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <style>
     :root {
       --bg: #f8fafc;
@@ -458,7 +458,7 @@
         <div>
           <div class="invoice-result-pane" id="invoiceResultPane">
             <div class="qr-center">
-              <canvas id="qrcodeCanvas"></canvas>
+              <div id="qrcodeCanvas"></div>
               <div class="qr-caption"><i class="fa-solid fa-circle-question"></i> QR support varies by wallet; if scanning fails, copy the details manually.</div>
             </div>
 
@@ -670,15 +670,27 @@ console.<span class="c-fn">log</span>(<span class="c-str">"Result:"</span>, <spa
       document.getElementById('resToken').innerText = token;
       document.getElementById('resExpiry').innerText = new Date(activeInvoice.expiresAt).toLocaleTimeString();
 
-      // Render EIP-681 standard URI in QR Code:
+      // Render EIP-681 standard URI in QR Code
       // ethereum:<tokenAddress>@<chainId>/transfer?address=<recipient>&uint256=<atomicAmount>
       const chainId = CHAIN_IDS[currentDemoNetwork];
       const eip681Uri = `ethereum:${token}@${chainId}/transfer?address=${activeInvoice.recipient}&uint256=${activeInvoice.amountAtomic}`;
-      
-      const canvas = document.getElementById('qrcodeCanvas');
-      QRCode.toCanvas(canvas, eip681Uri, { width: 170, margin: 1 }, function(error) {
-        if (error) console.error(error);
-      });
+
+      const qrContainer = document.getElementById('qrcodeCanvas');
+      qrContainer.innerHTML = ''; // clear previous QR
+      try {
+        if (typeof QRCode === 'undefined') throw new Error('QRCode library not loaded');
+        new QRCode(qrContainer, {
+          text: eip681Uri,
+          width: 170,
+          height: 170,
+          colorDark: '#0052ff',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } catch (qrErr) {
+        console.error('QR generation failed:', qrErr);
+        qrContainer.innerHTML = `<div style="padding:1rem;font-size:0.75rem;word-break:break-all;background:#f1f5f9;border-radius:8px;color:#0f172a;">${eip681Uri}</div>`;
+      }
 
     } catch (err) {
       alert("Invoice error: " + err.message);
